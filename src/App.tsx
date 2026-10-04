@@ -4,6 +4,7 @@ import DashboardPage from "./pages/Dashboard/DashboardPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import GoalsPage from "./pages/Goals/GoalsPage";
 import GoalDetailPage from "./pages/Goals/GoalDetailPage";
+import GoalFormPage from "./pages/Goals/GoalFormPage";
 
 export default function App() {
   return (
@@ -12,6 +13,8 @@ export default function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/goals" element={<GoalsPage />} />
+        <Route path="/goals/new" element={<GoalFormPage />} />
+        <Route path="/goals/:goalId/edit" element={<GoalFormPage />} />
         <Route path="/goals/:goalId" element={<GoalDetailPage />} />
         <Route path="/knowledge" element={<PlaceholderPage title="Knowledge" />} />
         <Route path="/impact" element={<PlaceholderPage title="Impact" />} />

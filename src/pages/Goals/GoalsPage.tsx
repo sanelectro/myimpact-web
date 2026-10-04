@@ -1,10 +1,8 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { getGoalEvidence, getGoals } from "../../api/myImpact";
-import type { Goal } from "../../types/api";
+import { getGoalAssessment, getGoals } from "../../api/myImpact";
+import type { Goal, GoalExpectationStatus } from "../../types/api";
 import "./Goals.css";
-
-const EXPECTED_ACHIEVEMENTS = 3;
 
 function formatStatus(status: Goal["status"]) {
   return status.charAt(0).toUpperCase() + status.slice(1);
@@ -16,21 +14,27 @@ function formatScope(scope: Goal["scope"]) {
   return "Personal";
 }
 
-function getProgressStatus(progress: number) {
-  if (progress === 0) return "Not started";
-  if (progress > 100) return "Above expectations";
-  if (progress === 100) return "Met expectations";
-  return "In-progress";
+function formatExpectationStatus(status: GoalExpectationStatus) {
+  switch (status) {
+    case "above":
+      return "Above expectations";
+    case "met":
+      return "Met expectations";
+    case "in_progress":
+      return "In-progress";
+    default:
+      return "Not started";
+  }
 }
 
 export default function GoalsPage() {
   const query = useQuery({ queryKey: ["goals"], queryFn: getGoals });
   const goals = query.data ?? [];
 
-  const evidenceQueries = useQueries({
+  const assessmentQueries = useQueries({
     queries: goals.map((goal) => ({
-      queryKey: ["goal-evidence", goal.id],
-      queryFn: () => getGoalEvidence(goal.id),
+      queryKey: ["goal-assessment", goal.id],
+      queryFn: () => getGoalAssessment(goal.id),
       staleTime: 30_000,
     })),
   });
@@ -48,30 +52,32 @@ export default function GoalsPage() {
   const activeGoals = goals.filter((goal) => goal.status === "active").length;
   const completedGoals = goals.filter((goal) => goal.status === "completed").length;
 
-  const goalProgress = goals.map((goal, index) => {
-    if (goal.status === "completed") return 100;
-    const achievementCount = evidenceQueries[index]?.data?.length ?? 0;
-    return Math.max(0, Math.round((achievementCount / EXPECTED_ACHIEVEMENTS) * 100));
-  });
-
-  const cappedProgress = goalProgress.map((progress) => Math.min(100, progress));
+  const progressValues = goals.map((_, index) => assessmentQueries[index]?.data?.progress_percentage ?? 0);
+  const cappedProgress = progressValues.map((progress) => Math.min(100, progress));
   const overallProgress = cappedProgress.length
     ? Math.round(cappedProgress.reduce((sum, value) => sum + value, 0) / cappedProgress.length)
     : 0;
 
-  const progressStatuses = goalProgress.map(getProgressStatus);
-  const aboveCount = progressStatuses.filter((status) => status === "Above expectations").length;
-  const metCount = progressStatuses.filter((status) => status === "Met expectations").length;
-  const buildingCount = progressStatuses.filter((status) => status === "In-progress").length;
-  const notStartedCount = progressStatuses.filter((status) => status === "Not started").length;
+  const statuses = goals.map((_, index) => assessmentQueries[index]?.data?.status ?? "not_started");
+  const aboveCount = statuses.filter((status) => status === "above").length;
+  const metCount = statuses.filter((status) => status === "met").length;
+  const inProgressCount = statuses.filter((status) => status === "in_progress").length;
+  const notStartedCount = statuses.filter((status) => status === "not_started").length;
   const atOrAboveCount = aboveCount + metCount;
 
   return (
     <div className="goals-page">
       <div className="page-heading">
-        <div className="eyebrow">YOUR GOALS</div>
-        <h1>What you’re working toward</h1>
-        <p>Review each goal and open it to see the evidence and impact connected to it.</p>
+        <div className="goals-heading-row">
+          <div>
+            <div className="eyebrow">YOUR GOALS</div>
+            <h1>What you’re working toward</h1>
+            <p>Review each goal and open it to see the evidence and impact connected to it.</p>
+          </div>
+          <Link className="goals-add-button" to="/goals/new">
+            + Add goal
+          </Link>
+        </div>
       </div>
 
       <section className="goals-overview" aria-label="Goal progress overview">
@@ -108,13 +114,13 @@ export default function GoalsPage() {
           <div className="goal-health-bar" aria-hidden="true">
             {aboveCount > 0 && <span className="health-segment health-above" style={{ flex: aboveCount }} />}
             {metCount > 0 && <span className="health-segment health-met" style={{ flex: metCount }} />}
-            {buildingCount > 0 && <span className="health-segment health-building" style={{ flex: buildingCount }} />}
+            {inProgressCount > 0 && <span className="health-segment health-in-progress" style={{ flex: inProgressCount }} />}
             {notStartedCount > 0 && <span className="health-segment health-not-started" style={{ flex: notStartedCount }} />}
           </div>
           <div className="goal-health-legend">
             <span><i className="legend-dot health-above" /> Above {aboveCount}</span>
             <span><i className="legend-dot health-met" /> Met {metCount}</span>
-            <span><i className="legend-dot health-building" /> Building {buildingCount}</span>
+            <span><i className="legend-dot health-in-progress" /> In-progress {inProgressCount}</span>
             <span><i className="legend-dot health-not-started" /> Not started {notStartedCount}</span>
           </div>
         </div>
@@ -130,9 +136,9 @@ export default function GoalsPage() {
 
       <div className="goal-list">
         {goals.map((goal, index) => {
-          const progress = goalProgress[index] ?? 0;
-          const displayProgress = `${progress}%`;
-          const progressStatus = getProgressStatus(progress);
+          const assessment = assessmentQueries[index]?.data;
+          const progress = assessment?.progress_percentage ?? 0;
+          const progressStatus = assessment?.status ?? "not_started";
           const progressFill = Math.min(100, progress);
 
           return (
@@ -145,8 +151,8 @@ export default function GoalsPage() {
 
                 <div className="goal-list-card-title-row">
                   <h3>{goal.title}</h3>
-                  <span className={`goal-progress-status goal-progress-${progressStatus.toLowerCase().replaceAll(" ", "-")}`}>
-                    {progressStatus}
+                  <span className={`goal-progress-status goal-progress-${progressStatus}`}>
+                    {formatExpectationStatus(progressStatus)}
                   </span>
                 </div>
 
@@ -155,12 +161,12 @@ export default function GoalsPage() {
                 <div className="goal-progress-row">
                   <div className="goal-progress-track" aria-label={`${progress}% accomplished`}>
                     <div
-                      className={`goal-progress-fill goal-progress-fill-${progressStatus.toLowerCase().replaceAll(" ", "-")}`}
+                      className={`goal-progress-fill goal-progress-fill-${progressStatus}`}
                       style={{ width: `${progressFill}%` }}
                     />
                   </div>
-                  <strong className={`goal-progress-value goal-progress-value-${progressStatus.toLowerCase().replaceAll(" ", "-")}`}>
-                    {displayProgress}
+                  <strong className={`goal-progress-value goal-progress-value-${progressStatus}`}>
+                    {progress}%
                   </strong>
                 </div>
                 <div className="goal-progress-caption">

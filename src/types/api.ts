@@ -26,6 +26,32 @@ export interface Goal {
   updated_at: string;
 }
 
+
+export interface GoalCreateRequest {
+  title: string;
+  description: string | null;
+  scope: GoalScope;
+  start_date: string | null;
+  end_date: string | null;
+  source: string | null;
+}
+
+export type GoalUpdateRequest = Partial<GoalCreateRequest>;
+
+export type GoalExpectationStatus = "not_started" | "in_progress" | "met" | "above";
+
+export interface GoalAssessment {
+  goal_id: string;
+  expected_achievement_count: number;
+  achievement_count: number;
+  evidence_count: number;
+  demonstrated_impact_count: number;
+  qualifying_achievement_count: number;
+  progress_percentage: number;
+  status: GoalExpectationStatus;
+  description: string;
+}
+
 export interface GoalEvidence {
   evidence_id: string;
   title: string;

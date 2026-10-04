@@ -1,20 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import {
+  getGoal,
+  getGoalAssessment,
   getGoalEvidence,
   getGoalImpact,
   getGoalInsight,
-  getGoals,
 } from "../../api/myImpact";
 import type { GoalEvidence, ImpactAssessment } from "../../types/api";
 import "./GoalDetail.css";
 
-const EXPECTED_ACHIEVEMENTS = 3;
-
-function formatDate(value: string | null) {
+function formatDate(value: string | null | undefined) {
   if (!value) return null;
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
     month: "short",
     year: "numeric",
   }).format(new Date(value));
@@ -24,110 +23,57 @@ function formatImpactType(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-
-function getAssessment(achievementCount: number) {
-  if (achievementCount === 0) {
-    return {
-      label: "Not Started",
-      tone: "not-started",
-      description:
-        "You have not recorded any achievements for this goal yet.",
-    };
-  }
-
-  if (achievementCount < EXPECTED_ACHIEVEMENTS) {
-    return {
-      label: "Not Met Expectations",
-      tone: "not-met",
-      description: `You have demonstrated ${achievementCount} of ${EXPECTED_ACHIEVEMENTS} expected achievements. Keep building evidence and demonstrated impact.`,
-    };
-  }
-
-  if (achievementCount === EXPECTED_ACHIEVEMENTS) {
-    return {
-      label: "Met Expectations",
-      tone: "met",
-      description:
-        "You have reached the expected minimum of three meaningful achievements with demonstrated impact.",
-    };
-  }
-
-  return {
-    label: "Above Expectations",
-    tone: "above",
-    description: `You have demonstrated ${achievementCount} meaningful achievements, exceeding the expected minimum of ${EXPECTED_ACHIEVEMENTS}.`,
-  };
+function formatScope(scope: string) {
+  return scope.charAt(0).toUpperCase() + scope.slice(1);
 }
 
-function getGuidance(achievementCount: number) {
-  if (achievementCount === 0) {
+function formatGoalStatus(status: string) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+type Guidance = {
+  optional?: boolean;
+  title: string;
+  intro: string;
+  steps: [string, string][];
+};
+
+function getGuidance(status: string, qualifyingCount: number, expectedCount: number): Guidance | null {
+  if (status === "not_started") {
     return {
-      optional: false,
       title: "How to get started",
-      intro: `Your expectation: demonstrate at least ${EXPECTED_ACHIEVEMENTS} meaningful achievements with supporting evidence and demonstrated impact.`,
+      intro: `Your expectation is ${expectedCount} meaningful achievements with supporting evidence and demonstrated impact. Start with one concrete contribution you can own.`,
       steps: [
-        [
-          "1. Understand the goal",
-          "Identify the reliability problems, systems affected, and measures that would demonstrate improvement.",
-        ],
-        [
-          "2. Pick your first achievement",
-          "Choose one concrete contribution you can own, such as improving monitoring, reducing recurring incidents, or introducing health checks.",
-        ],
-        [
-          "3. Capture evidence",
-          "Keep the PR, design, incident resolution, dashboard, deployment, ADR, metric, or stakeholder feedback that proves what you did.",
-        ],
-        [
-          "4. Demonstrate impact",
-          "Prefer measurable outcomes such as reduced investigation time, fewer incidents, faster detection, or improved operational readiness.",
-        ],
+        ["Understand the goal", "Identify the problem, outcome or capability this goal is asking you to improve."],
+        ["Choose your first achievement", "Define one concrete contribution that moves the goal forward and can be clearly described."],
+        ["Capture evidence", "Keep the PR, design, dashboard, incident, document, metric or stakeholder feedback that proves the work happened."],
+        ["Demonstrate impact", "Capture the measurable difference your work created — for example time saved, incidents reduced, coverage increased or quality improved."],
       ],
     };
   }
 
-  if (achievementCount < EXPECTED_ACHIEVEMENTS) {
+  if (status === "in_progress") {
+    const remaining = Math.max(0, expectedCount - qualifyingCount);
     return {
-      optional: false,
-      title: "Keep building",
-      intro:
-        "You have started making progress. The next step is to turn your work into more evidence-backed, demonstrated impact.",
+      title: "Keep building toward the expected bar",
+      intro: `You have ${qualifyingCount} meaningful achievement${qualifyingCount === 1 ? "" : "s"} demonstrated. ${remaining} more ${remaining === 1 ? "achievement" : "achievements"} with evidence and impact will meet expectations.`,
       steps: [
-        [
-          "1. Complete another meaningful achievement",
-          "Choose work that materially advances the goal rather than adding activity for its own sake.",
-        ],
-        [
-          "2. Strengthen the evidence",
-          "Capture the source and explain why it is relevant to this goal.",
-        ],
-        [
-          "3. Make the impact measurable",
-          "Where possible, show the before-and-after outcome, such as time saved, incidents reduced, or coverage increased.",
-        ],
+        ["Complete the next meaningful contribution", "Prioritise work that materially advances the outcome rather than simply increasing activity."],
+        ["Keep the evidence connected", "Make sure each contribution has clear supporting evidence and a strong relationship to the goal."],
+        ["Make the impact measurable", "Prefer before-and-after outcomes such as time saved, incidents reduced, coverage increased or adoption improved."],
       ],
     };
   }
 
-  if (achievementCount === EXPECTED_ACHIEVEMENTS) {
+  if (status === "met") {
     return {
       optional: true,
       title: "Optional: strengthen your story",
-      intro:
-        "You have met the expected bar. Use these suggestions only if you want to make the impact easier to communicate in a 1:1 or review.",
+      intro: "You have met the expected bar. Use these suggestions only if you want to make the impact easier to communicate in a 1:1 or review.",
       steps: [
-        [
-          "1. Keep evidence current",
-          "Capture new contributions while the details and measurable outcomes are fresh.",
-        ],
-        [
-          "2. Deepen measurable impact",
-          "Prefer outcomes that show scale, quality, reliability, efficiency, leadership, or business value.",
-        ],
-        [
-          "3. Connect the story",
-          "Use the strongest achievements to explain how your contribution advanced the goal.",
-        ],
+        ["Keep evidence current", "Capture new contributions while the details and measurable outcomes are fresh."],
+        ["Deepen measurable impact", "Prefer outcomes that show scale, quality, reliability, efficiency, leadership or business value."],
+        ["Connect the story", "Use the strongest achievements to explain how your contribution advanced the goal."],
       ],
     };
   }
@@ -137,8 +83,17 @@ function getGuidance(achievementCount: number) {
 
 export default function GoalDetailPage() {
   const { goalId } = useParams();
-  const goals = useQuery({ queryKey: ["goals"], queryFn: getGoals });
-  const goal = goals.data?.find((item) => item.id === goalId);
+  const goal = useQuery({
+    queryKey: ["goal", goalId],
+    queryFn: () => getGoal(goalId!),
+    enabled: Boolean(goalId),
+  });
+
+  const assessment = useQuery({
+    queryKey: ["goal-assessment", goalId],
+    queryFn: () => getGoalAssessment(goalId!),
+    enabled: Boolean(goalId),
+  });
 
   const evidence = useQuery({
     queryKey: ["goal-evidence", goalId],
@@ -158,8 +113,8 @@ export default function GoalDetailPage() {
     enabled: Boolean(goalId && impact.data?.length),
   });
 
-  if (goals.isLoading) return <p>Loading goal…</p>;
-  if (!goal) {
+  if (goal.isLoading) return <p>Loading goal…</p>;
+  if (goal.isError || !goal.data) {
     return (
       <p>
         Goal not found. <Link to="/goals">Back to goals</Link>
@@ -167,29 +122,23 @@ export default function GoalDetailPage() {
     );
   }
 
+  const goalData = goal.data;
+  const assessmentData = assessment.data;
   const evidenceItems = evidence.data ?? [];
   const impactItems = impact.data ?? [];
   const impactByEvidence = new Map<string, ImpactAssessment>();
   impactItems.forEach((item) => impactByEvidence.set(item.evidence_id, item));
 
-  const demonstratedImpactCount = evidenceItems.filter((item) =>
-    impactByEvidence.has(item.evidence_id),
-  ).length;
-
-  const assessment = getAssessment(evidenceItems.length);
-  const guidance = getGuidance(evidenceItems.length);
-  const progressPercent = Math.round(
-    (evidenceItems.length / EXPECTED_ACHIEVEMENTS) * 100,
-  );
-  const displayPercent = Math.max(0, progressPercent);
+  const assessmentStatus = assessmentData?.status ?? "not_started";
+  const displayPercent = assessmentData?.progress_percentage ?? 0;
   const visualPercent = Math.min(100, displayPercent);
-
-  const statusLabel =
-    goal.status === "completed"
-      ? "Completed"
-      : goal.status === "active"
-        ? "Active"
-        : goal.status.charAt(0).toUpperCase() + goal.status.slice(1);
+  const guidance = assessmentData
+    ? getGuidance(
+        assessmentData.status,
+        assessmentData.qualifying_achievement_count,
+        assessmentData.expected_achievement_count,
+      )
+    : null;
 
   return (
     <div className="goal-detail-page">
@@ -198,38 +147,55 @@ export default function GoalDetailPage() {
       </Link>
 
       <header className="goal-detail-hero">
-        <div className="eyebrow">GOAL DETAIL</div>
+        <div className="goal-detail-meta-label">
+          GOAL DETAIL <span>·</span> {formatScope(goalData.scope).toUpperCase()}
+        </div>
         <div className="goal-detail-hero-row">
           <div className="goal-detail-title-block">
-            <h1>{goal.title}</h1>
-            {goal.description && <p>{goal.description}</p>}
+            <h1>{goalData.title}</h1>
+            {goalData.description && <p>{goalData.description}</p>}
           </div>
-          <span className="goal-status-pill">{statusLabel}</span>
+          <div className="goal-detail-actions">
+            <span className={`goal-detail-lifecycle goal-detail-lifecycle-${goalData.status}`}>
+              {formatGoalStatus(goalData.status)}
+            </span>
+            <Link className="goal-edit-button" to={`/goals/${goalData.id}/edit`}>
+              Edit goal
+            </Link>
+          </div>
         </div>
       </header>
 
-      <section className="goal-detail-card goal-assessment-card">
+      <section className={`goal-detail-card goal-assessment-card goal-assessment-${assessmentStatus}`}>
         <div className="goal-assessment-main">
           <div className="card-eyebrow">WHERE YOU ARE</div>
           <div className="goal-assessment-title-row">
-            <h2>{assessment.label}</h2>
+            <h2>
+              {assessmentStatus === "above"
+                ? "Above Expectations"
+                : assessmentStatus === "met"
+                  ? "Met Expectations"
+                  : assessmentStatus === "in_progress"
+                    ? "In-progress"
+                    : "Not Started"}
+            </h2>
           </div>
           <p className="goal-assessment-description">
-            {assessment.description}
+            {assessmentData?.description ?? "Assessing your goal progress…"}
           </p>
         </div>
 
         <div className="goal-stat-grid">
           <div className="goal-stat">
-            <strong>{evidenceItems.length}</strong>
+            <strong>{assessmentData?.achievement_count ?? evidenceItems.length}</strong>
             <span>achievements</span>
           </div>
           <div className="goal-stat">
-            <strong>{evidenceItems.length}</strong>
-            <span>with evidence</span>
+            <strong>{assessmentData?.evidence_count ?? evidenceItems.length}</strong>
+            <span>supported by evidence</span>
           </div>
           <div className="goal-stat">
-            <strong>{demonstratedImpactCount}</strong>
+            <strong>{assessmentData?.demonstrated_impact_count ?? 0}</strong>
             <span>with demonstrated impact</span>
           </div>
           <div className="goal-stat">
@@ -243,9 +209,9 @@ export default function GoalDetailPage() {
         </div>
 
         <div className="goal-meta">
-          {goal.source && <span>Source: {goal.source}</span>}
-          {goal.start_date && <span>Started: {formatDate(goal.start_date)}</span>}
-          {goal.end_date && <span>Target: {formatDate(goal.end_date)}</span>}
+          {goalData.source && <span>Source: {goalData.source}</span>}
+          {goalData.start_date && <span>Started: {formatDate(goalData.start_date)}</span>}
+          {goalData.end_date && <span>Target: {formatDate(goalData.end_date)}</span>}
         </div>
       </section>
 
@@ -261,7 +227,7 @@ export default function GoalDetailPage() {
         {evidenceItems.length === 0 ? (
           <div className="empty-goal-state">
             <strong>No achievements recorded yet</strong>
-            <span>Use the next steps below to turn this goal into your first concrete achievement.</span>
+            <span>Use the guidance below to turn this goal into your first concrete achievement.</span>
           </div>
         ) : (
           <div className="achievement-list">
@@ -289,19 +255,13 @@ export default function GoalDetailPage() {
                     </div>
                   </div>
 
-                  <div className={`achievement-impact ${itemImpact ? "has-impact" : ""}`}>
-                    <div className="card-eyebrow">DEMONSTRATED IMPACT</div>
-                    {itemImpact ? (
-                      <>
-                        <p>{itemImpact.impact_summary}</p>
-                        <span>{Math.round(itemImpact.confidence * 100)}% confidence</span>
-                      </>
-                    ) : (
-                      <p className="no-impact-text">
-                        Connect measurable impact to show what difference this achievement made.
-                      </p>
-                    )}
-                  </div>
+                  {itemImpact && (
+                    <div className="achievement-impact has-impact">
+                      <div className="card-eyebrow">DEMONSTRATED IMPACT</div>
+                      <p>{itemImpact.impact_summary}</p>
+                      <span>{Math.round(itemImpact.confidence * 100)}% confidence</span>
+                    </div>
+                  )}
                 </article>
               );
             })}
@@ -317,9 +277,7 @@ export default function GoalDetailPage() {
             <p>{insight.data.summary}</p>
             <div className="tag-list insight-tags">
               {insight.data.impact_types.map((type) => (
-                <span className="tag" key={type}>
-                  {formatImpactType(type)}
-                </span>
+                <span className="tag" key={type}>{formatImpactType(type)}</span>
               ))}
             </div>
           </div>
@@ -347,7 +305,7 @@ export default function GoalDetailPage() {
                   <div className="guidance-item" key={title}>
                     <div className="guidance-number">{index + 1}</div>
                     <div>
-                      <strong>{title.replace(/^\d+\.\s*/, "")}</strong>
+                      <strong>{title}</strong>
                       <p>{description}</p>
                     </div>
                   </div>
@@ -360,7 +318,7 @@ export default function GoalDetailPage() {
                 <div className="guidance-item" key={title}>
                   <div className="guidance-number">{index + 1}</div>
                   <div>
-                    <strong>{title.replace(/^\d+\.\s*/, "")}</strong>
+                    <strong>{title}</strong>
                     <p>{description}</p>
                   </div>
                 </div>
