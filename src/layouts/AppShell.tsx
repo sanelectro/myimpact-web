@@ -9,7 +9,9 @@ const navigation = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/goals", label: "Goals" },
   { to: "/knowledge", label: "Knowledge" },
+  { to: "/evidence", label: "Evidence" },
   { to: "/impact", label: "Impact" },
+  { to: "/career", label: "Career Journey" },
   { to: "/reports", label: "1:1 & Reports" },
   { to: "/chat", label: "AI Assistant" },
 ];
