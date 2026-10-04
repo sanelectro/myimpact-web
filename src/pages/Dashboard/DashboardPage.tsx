@@ -1,3 +1,4 @@
+import "./Dashboard.css";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
@@ -119,7 +120,7 @@ export default function DashboardPage() {
     .flatMap((query) => query.data ?? [])
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
-  const firstInsightGoal = activeGoals.find((goal, index) => (impactQueries[index]?.data?.length ?? 0) > 0);
+  const firstInsightGoal = activeGoals.find((_, index) => (impactQueries[index]?.data?.length ?? 0) > 0);
   const insightQuery = useQuery({
     queryKey: ["goal-insight", firstInsightGoal?.id],
     queryFn: () => getGoalInsight(firstInsightGoal!.id),

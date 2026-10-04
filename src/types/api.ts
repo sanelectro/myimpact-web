@@ -1,4 +1,5 @@
 export type GoalStatus = "draft" | "active" | "completed" | "archived";
+export type GoalScope = "personal" | "team" | "organization";
 
 export type ImpactType =
   | "technical"
@@ -16,6 +17,7 @@ export interface Goal {
   id: string;
   title: string;
   description: string | null;
+  scope: GoalScope;
   start_date: string | null;
   end_date: string | null;
   status: GoalStatus;
