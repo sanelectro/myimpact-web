@@ -2,49 +2,58 @@
 
 Frontend for **MyImpact — AI Performance Intelligence Platform**.
 
-## MVP
-The UI lets an employee:
-- Select a reporting period
-- Upload goals/role/1:1 documents
-- Upload personal evidence
-- Generate Weekly Impact
-- View goal alignment
-- Inspect source evidence behind AI claims
+## M6.2 — MyImpact Dashboard
 
-## Technology
-- React / Next.js
-- TypeScript
-- Microsoft Entra ID
-- REST API via `myimpact-api`
+M6.2 connects the dashboard to the existing M5 product APIs. The frontend does not introduce a new dashboard API; it aggregates the existing goal-scoped contracts at the UI layer.
 
-## Structure
+### Dashboard data flow
+
 ```text
-src/
-├── app/
-├── components/
-├── features/
-│   ├── dashboard/
-│   ├── evidence/
-│   ├── goals/
-│   ├── reports/
-│   └── documents/
-├── services/
-├── types/
-└── utils/
+GET /api/v1/goals?user_id=...
+          │
+          ├── GET /api/v1/goals/{goal_id}/evidence
+          ├── GET /api/v1/goals/{goal_id}/impact
+          │
+          └── GET /api/v1/goals/{goal_id}/insight
+                         │
+                         ▼
+                 MyImpact Dashboard
 ```
 
-## Local setup
+The dashboard currently surfaces:
+
+- Active goal count
+- Evidence count connected to active goals
+- Impact assessment count
+- Career insight availability
+- Recent impact assessments
+- Latest career insight
+- Preparation / next action
+- Active goal summary
+
+### Local setup
+
 ```bash
 npm install
 npm run dev
 ```
 
-Example environment:
+Copy `.env.example` to `.env.local` when you need to override the local API or user ID.
+
 ```text
-NEXT_PUBLIC_API_URL=http://localhost:5000
+VITE_API_BASE_URL=http://localhost:8000
+VITE_MYIMPACT_USER_ID=user-1
 ```
 
-Do not commit secrets.
+The default user ID is `user-1`, matching the M5 test/development fixtures. Replace it with the user ID available in your local API data.
+
+### Validation
+
+```bash
+npm test
+npm run build
+```
 
 ## Boundary
+
 This repository owns UI and client-side interactions. AI orchestration, RAG, MCP and database logic belong to `myimpact-ai` / `myimpact-api`.
