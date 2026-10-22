@@ -1,22 +1,27 @@
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
+import type { MockSession } from "../auth/mockAuth";
+import "./AppShell.css";
 
 interface AppShellProps {
   children: ReactNode;
+  session: MockSession;
+  onLogout: () => void;
 }
 
 const navigation = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/goals", label: "Goals" },
-  { to: "/knowledge", label: "Knowledge" },
+  { to: "/milestones", label: "Milestones" },
   { to: "/evidence", label: "Evidence" },
+  { to: "/archives", label: "Archives" },
   { to: "/impact", label: "Impact" },
   { to: "/career", label: "Career Journey" },
   { to: "/reports", label: "1:1 & Reports" },
   { to: "/chat", label: "AI Assistant" },
 ];
 
-export default function AppShell({ children }: AppShellProps) {
+export default function AppShell({ children, session, onLogout }: AppShellProps) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -51,7 +56,15 @@ export default function AppShell({ children }: AppShellProps) {
             <div className="eyebrow">MYIMPACT</div>
             <div className="page-context">Career impact workspace</div>
           </div>
-          <div className="user-chip">You</div>
+          <div className="topbar-account">
+            <div className="account-identity">
+              <span className="account-name">{session.displayName}</span>
+              <span className="account-role">{session.role}</span>
+            </div>
+            <button className="sign-out-button" type="button" onClick={onLogout}>
+              Sign out
+            </button>
+          </div>
         </header>
         <section className="content">{children}</section>
       </main>

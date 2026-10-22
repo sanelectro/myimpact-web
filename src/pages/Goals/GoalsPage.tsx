@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { getGoalAssessment, getGoals } from "../../api/myImpact";
 import type { Goal, GoalExpectationStatus } from "../../types/api";
+import { getAvailableGoalYears, getCurrentGoalYear, isGoalInYear } from "./financialYear";
 import "./Goals.css";
 
 function formatStatus(status: Goal["status"]) {
@@ -29,7 +31,12 @@ function formatExpectationStatus(status: GoalExpectationStatus) {
 
 export default function GoalsPage() {
   const query = useQuery({ queryKey: ["goals"], queryFn: getGoals });
-  const goals = query.data ?? [];
+  const [selectedYear, setSelectedYear] = useState<number | "undated">(getCurrentGoalYear);
+  const allGoals = (query.data ?? []).filter((goal) => goal.status !== "archived");
+  const currentYear = getCurrentGoalYear();
+  const years = getAvailableGoalYears(allGoals, currentYear);
+  const hasUndatedGoals = allGoals.some((goal) => isGoalInYear(goal, "undated"));
+  const goals = allGoals.filter((goal) => isGoalInYear(goal, selectedYear));
 
   const assessmentQueries = useQueries({
     queries: goals.map((goal) => ({
@@ -74,8 +81,8 @@ export default function GoalsPage() {
             <h1>What you’re working toward</h1>
             <p>Review each goal and open it to see the evidence and impact connected to it.</p>
           </div>
-          <Link className="goals-add-button" to="/goals/new">
-            + Add goal
+          <Link className="goals-add-button" to="/goals/import">
+            + Add / Import Goal(s)
           </Link>
         </div>
       </div>
@@ -129,13 +136,37 @@ export default function GoalsPage() {
       <div className="goals-section-heading">
         <div>
           <div className="eyebrow">YOUR GOALS</div>
-          <h2>Where you are on each goal</h2>
+          <h2>Goals for {selectedYear === "undated" ? "No financial year" : `FY ${selectedYear}`}</h2>
         </div>
-        <span>{totalGoals} goals</span>
+        <div className="goals-year-filter">
+          <label htmlFor="goals-year">Financial year (Jan–Dec)</label>
+          <select
+            id="goals-year"
+            value={selectedYear}
+            onChange={(event) => {
+              const value = event.target.value;
+              setSelectedYear(value === "undated" ? "undated" : Number(value));
+            }}
+          >
+            {years.map((year) => (
+              <option key={year} value={year}>
+                {year}{year === currentYear ? " (Current)" : year < currentYear ? " (Previous)" : ""}
+              </option>
+            ))}
+            {hasUndatedGoals && <option value="undated">No financial year</option>}
+          </select>
+          <span>{totalGoals} goals</span>
+        </div>
       </div>
 
       <div className="goal-list">
-        {goals.map((goal, index) => {
+        {goals.length === 0 ? (
+          <p className="goals-empty-state">
+            {selectedYear === "undated"
+              ? "No goals without financial-year dates."
+              : `No goals are assigned to ${selectedYear}.`}
+          </p>
+        ) : goals.map((goal, index) => {
           const assessment = assessmentQueries[index]?.data;
           const progress = assessment?.progress_percentage ?? 0;
           const progressStatus = assessment?.status ?? "not_started";

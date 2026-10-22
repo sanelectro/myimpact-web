@@ -1,0 +1,114 @@
+.archives-page {
+  display: grid;
+  gap: 28px;
+}
+
+.archive-section {
+  display: grid;
+  gap: 12px;
+}
+
+.archive-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.archive-section-heading h2 {
+  margin: 0;
+  color: #172b4d;
+  font-size: 19px;
+}
+
+.archive-section-heading span {
+  display: inline-grid;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  place-items: center;
+  border-radius: 999px;
+  background: #eef2f6;
+  color: #475467;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.archive-list {
+  display: grid;
+  gap: 10px;
+}
+
+.archive-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.archive-card-content {
+  min-width: 0;
+}
+
+.archive-card-content h2 {
+  margin: 7px 0;
+  font-size: 17px;
+}
+
+.archive-card-content p {
+  margin: 0 0 6px;
+  color: #667085;
+  line-height: 1.5;
+}
+
+.archive-card-content small,
+.archive-kind,
+.archive-section-empty {
+  color: #667085;
+  font-size: 12px;
+}
+
+.archive-kind {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.archive-delete-button {
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  border: 1px solid #f0b7b7;
+  border-radius: 6px;
+  background: #fff;
+  color: #b42318;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.archive-delete-button:hover:not(:disabled) {
+  background: #fff5f4;
+}
+
+.archive-delete-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.archives-empty h2 {
+  margin-top: 0;
+}
+
+.archives-error {
+  padding: 12px 14px;
+  border: 1px solid #f2c4c4;
+  border-radius: 8px;
+  background: #fff5f4;
+  color: #b42318;
+}
+
+@media (max-width: 680px) {
+  .archive-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

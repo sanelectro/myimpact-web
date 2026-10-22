@@ -145,7 +145,41 @@
 }
 
 .goals-section-heading h2 { margin: 4px 0 0; }
-.goals-section-heading > span { color: #98a2b3; font-size: 12px; font-weight: 650; }
+
+.goals-year-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.goals-year-filter label {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.goals-year-filter select {
+  min-height: 38px;
+  padding: 0 32px 0 11px;
+  border: 1px solid #d0d5dd;
+  border-radius: 9px;
+  background: #fff;
+  color: #344054;
+  font: inherit;
+  font-size: 13px;
+}
+
+.goals-year-filter > span { color: #98a2b3; font-size: 12px; font-weight: 650; }
+
+.goals-empty-state {
+  margin: 0;
+  padding: 24px;
+  border: 1px solid #dfe4ec;
+  border-radius: 17px;
+  background: #fff;
+  color: #667085;
+  font-size: 14px;
+}
 
 .goal-list { display: grid; gap: 12px; }
 
@@ -285,6 +319,9 @@
 
 @media (max-width: 560px) {
   .goals-section-heading { align-items: flex-start; flex-direction: column; gap: 6px; }
+  .goals-year-filter { flex-wrap: wrap; }
   .goal-list-card { padding: 18px; }
   .goal-list-card-arrow { display: none; }
 }
+.goal-status-approved { border-color: #b9e6fe; background: #f0f9ff; color: #026aa2; }
+.goal-status-draft { border-color: #d6bbfb; background: #f9f5ff; color: #6941c6; }

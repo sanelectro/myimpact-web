@@ -107,7 +107,7 @@ export default function GoalFormPage() {
         <p>
           {isEdit
             ? "Update the goal definition without changing the achievements, evidence or impact already connected to it."
-            : "Define the outcome you want to work toward. Your goal starts with no achievements and can build from there."}
+            : "Define the outcome you want to work toward. New goals start as Draft so you can review them before activation."}
         </p>
       </header>
 

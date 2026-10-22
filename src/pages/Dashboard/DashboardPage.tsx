@@ -1,14 +1,16 @@
 import "./Dashboard.css";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { getMockSession, getCareerStages } from "../../auth/mockAuth";
 import {
   getGoalEvidence,
+  getGoalAssessment,
   getGoalImpact,
   getGoalInsight,
+  getGoalMilestones,
   getGoals,
-  getKnowledgeDocuments,
 } from "../../api/myImpact";
-import type { GoalEvidence, ImpactAssessment } from "../../types/api";
+import type { GoalAssessment, GoalEvidence, GoalMilestone, ImpactAssessment } from "../../types/api";
 
 function ProgressCard({
   to,
@@ -95,8 +97,13 @@ function RecentAchievements({ assessments }: { assessments: ImpactAssessment[] }
 }
 
 export default function DashboardPage() {
+  const session = getMockSession();
+  const currentLevel = session?.careerLevel ?? 5;
+  const [previousStage, currentStage, nextStage] = getCareerStages(currentLevel);
+  const currentPosition = session?.role.startsWith("JL-")
+    ? session.role
+    : `${currentStage.label} · ${session?.role ?? "Lead Software Engineer"}`;
   const goalsQuery = useQuery({ queryKey: ["goals"], queryFn: getGoals });
-  const knowledgeQuery = useQuery({ queryKey: ["knowledge-documents"], queryFn: getKnowledgeDocuments });
 
   const goals = goalsQuery.data ?? [];
   const activeGoals = goals.filter((goal) => goal.status === "active");
@@ -108,6 +115,13 @@ export default function DashboardPage() {
     })),
   });
 
+  const goalAssessmentQueries = useQueries({
+    queries: activeGoals.map((goal) => ({
+      queryKey: ["goal-assessment", goal.id],
+      queryFn: () => getGoalAssessment(goal.id),
+    })),
+  });
+
   const impactQueries = useQueries({
     queries: activeGoals.map((goal) => ({
       queryKey: ["goal-impact", goal.id],
@@ -115,10 +129,21 @@ export default function DashboardPage() {
     })),
   });
 
+  const milestoneQueries = useQueries({
+    queries: activeGoals.map((goal) => ({
+      queryKey: ["goal-milestones", goal.id],
+      queryFn: () => getGoalMilestones(goal.id),
+    })),
+  });
+
   const allEvidence: GoalEvidence[] = evidenceQueries.flatMap((query) => query.data ?? []);
+  const allMilestones: GoalMilestone[] = milestoneQueries.flatMap((query) => query.data ?? []);
   const allAssessments = impactQueries
     .flatMap((query) => query.data ?? [])
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const goalAssessments: GoalAssessment[] = goalAssessmentQueries.flatMap((query) =>
+    query.data ? [query.data] : [],
+  );
 
   const firstInsightGoal = activeGoals.find((_, index) => (impactQueries[index]?.data?.length ?? 0) > 0);
   const insightQuery = useQuery({
@@ -131,20 +156,27 @@ export default function DashboardPage() {
     ? allAssessments.reduce((sum, item) => sum + item.impact_score, 0) / allAssessments.length
     : 0;
   const evidenceStrength = allEvidence.length ? Math.min(1, allEvidence.reduce((sum, item) => sum + item.confidence, 0) / allEvidence.length) : 0;
-  const knowledgeCount = knowledgeQuery.data?.length ?? 0;
-  const goalsWithEvidence = activeGoals.reduce((count, _goal, index) =>
-    count + ((evidenceQueries[index]?.data?.length ?? 0) > 0 ? 1 : 0),
-  0);
-  const goalScore = activeGoals.length ? goalsWithEvidence / activeGoals.length : 0;
+  const completedMilestoneCount = allMilestones.filter((item) => item.status === "completed").length;
+  const goalProgress = activeGoals.length
+    ? Math.round(
+        goalAssessments.reduce(
+          (sum, assessment) => sum + Math.min(100, assessment.progress_percentage),
+          0,
+        ) / activeGoals.length,
+      )
+    : 0;
+  const goalsMeetingExpectations = goalAssessments.filter(
+    (assessment) => assessment.status === "met" || assessment.status === "above",
+  ).length;
 
-  const isLoading = goalsQuery.isLoading || knowledgeQuery.isLoading || evidenceQueries.some((query) => query.isLoading) || impactQueries.some((query) => query.isLoading);
-  const queryError = goalsQuery.error ?? knowledgeQuery.error ?? evidenceQueries.find((query) => query.error)?.error ?? impactQueries.find((query) => query.error)?.error;
+  const isLoading = goalsQuery.isLoading || evidenceQueries.some((query) => query.isLoading) || goalAssessmentQueries.some((query) => query.isLoading) || impactQueries.some((query) => query.isLoading) || milestoneQueries.some((query) => query.isLoading);
+  const queryError = goalsQuery.error ?? evidenceQueries.find((query) => query.error)?.error ?? goalAssessmentQueries.find((query) => query.error)?.error ?? impactQueries.find((query) => query.error)?.error ?? milestoneQueries.find((query) => query.error)?.error;
 
   if (queryError) {
     return (
       <div>
         <div className="hero">
-          <div><div className="eyebrow">DASHBOARD</div><h1>Your career story, at a glance.</h1><p>See how your goals, knowledge, evidence and impact are coming together.</p></div>
+          <div><div className="eyebrow">DASHBOARD</div><h1>Your career story, at a glance.</h1><p>See how your goals, milestones, evidence and impact are coming together.</p></div>
           <div className="hero-badge">M6.2</div>
         </div>
         <ErrorCard message={queryError instanceof Error ? queryError.message : "The dashboard data could not be loaded."} />
@@ -158,7 +190,7 @@ export default function DashboardPage() {
         <div>
           <div className="eyebrow">DASHBOARD</div>
           <h1>Your career story, at a glance.</h1>
-          <p>See how your goals, knowledge, evidence and impact are coming together — and what to focus on next.</p>
+          <p>See how your goals, milestones, evidence and impact are coming together — and what to focus on next.</p>
         </div>
         <div className="hero-badge">M6.2 · Live data</div>
       </div>
@@ -171,23 +203,23 @@ export default function DashboardPage() {
             <div>
               <div className="card-eyebrow">CAREER JOURNEY</div>
               <h2>Where you are today — and where you can go next</h2>
-              <p>Your current position is <strong>JL5 · Lead Software Engineer</strong>. Use the journey to understand what will strengthen your readiness for the next level.</p>
+              <p>Your current position is <strong>{currentPosition}</strong>. Use the journey to understand what will strengthen your readiness for the next level.</p>
             </div>
             <Link className="text-link" to="/career">Explore career journey →</Link>
             <div className="journey-track">
-              <div className="journey-step"><span>JL4</span><small>Build & deliver</small></div>
+              <div className="journey-step"><span>{previousStage.label}</span><small>{previousStage.title}</small></div>
               <div className="journey-line" />
-              <div className="journey-step current"><span>JL5</span><small>You are here</small></div>
+              <div className="journey-step current"><span>{currentStage.label}</span><small>You are here</small></div>
               <div className="journey-line" />
-              <div className="journey-step"><span>JL6</span><small>Lead at scale</small></div>
+              <div className="journey-step"><span>{nextStage.label}</span><small>{nextStage.title}</small></div>
             </div>
           </section>
 
           <section className="progress-section">
             <div className="section-heading"><div><div className="card-eyebrow">YOUR OVERALL PROGRESS</div><h2>How are you doing?</h2></div><p>Open any area to see the details behind the status.</p></div>
             <div className="progress-grid">
-              <ProgressCard to="/goals" icon="🎯" title="Goals" status={progressStatus(goalScore)} description="How am I doing against what I’m expected to achieve?" meta={`${activeGoals.length} active goal${activeGoals.length === 1 ? "" : "s"}`} />
-              <ProgressCard to="/knowledge" icon="📚" title="Knowledge" status={knowledgeCount >= 5 ? "Strong" : knowledgeCount > 0 ? "Growing" : "Getting started"} description="How strong is my knowledge and capability?" meta={`${knowledgeCount} document${knowledgeCount === 1 ? "" : "s"} connected`} />
+              <ProgressCard to="/goals" icon="🎯" title="Goals" status={`${goalProgress}%`} description="Average qualifying-achievement progress against each active goal’s expected minimum." meta={`${goalsMeetingExpectations}/${activeGoals.length} active goals met expectations`} />
+              <ProgressCard to="/milestones" icon="🧭" title="Milestones" status={allMilestones.length ? `${completedMilestoneCount}/${allMilestones.length}` : "Getting started"} description="Which meaningful steps are moving my goals forward?" meta={`${allMilestones.length} milestone${allMilestones.length === 1 ? "" : "s"} · ${completedMilestoneCount} completed`} />
               <ProgressCard to="/evidence" icon="📝" title="Evidence" status={progressStatus(evidenceStrength)} description="How well can I prove what I’ve done?" meta={`${allEvidence.length} achievement${allEvidence.length === 1 ? "" : "s"} captured`} />
               <ProgressCard to="/impact" icon="🚀" title="Impact" status={progressStatus(avgImpact)} description="How much difference is my work making?" meta={`${allAssessments.length} impact result${allAssessments.length === 1 ? "" : "s"} · ${new Set(allAssessments.map((a) => a.impact_type)).size} areas`} />
             </div>

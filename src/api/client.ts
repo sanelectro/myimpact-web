@@ -1,9 +1,8 @@
+import { getCurrentUserId } from "../auth/mockAuth";
+
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ??
   "http://localhost:8000";
-
-export const MYIMPACT_USER_ID =
-  import.meta.env.VITE_MYIMPACT_USER_ID ?? "user-1";
 
 export async function apiRequest<T>(
   path: string,
@@ -18,8 +17,24 @@ export async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    let message = `API request failed: ${response.status}`;
+    try {
+      const body = (await response.json()) as {
+        error?: { message?: string };
+        detail?: string;
+      };
+      message = body.error?.message ?? body.detail ?? message;
+    } catch {
+      // Keep the status-based message when the response is not JSON.
+    }
+    throw new Error(message);
   }
 
-  return response.json() as Promise<T>;
+  if (response.status === 204) return undefined as T;
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
+}
+
+export function getCurrentUserIdForApi() {
+  return getCurrentUserId();
 }

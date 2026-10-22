@@ -1,0 +1,64 @@
+@media (min-width: 681px) {
+  .app-shell {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+
+  .main-content {
+    overflow-y: auto;
+  }
+}
+
+.topbar-account {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.account-identity {
+  display: grid;
+  gap: 3px;
+  text-align: right;
+}
+
+.account-name {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.account-role {
+  color: #667085;
+  font-size: 11px;
+}
+
+.sign-out-button {
+  padding: 8px 11px;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  background: #fff;
+  color: #344054;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sign-out-button:hover {
+  background: #f9fafb;
+}
+
+@media (max-width: 560px) {
+  .account-role {
+    display: none;
+  }
+
+  .topbar-account {
+    gap: 8px;
+  }
+}
