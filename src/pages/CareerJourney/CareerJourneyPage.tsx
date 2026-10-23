@@ -1,3 +1,30 @@
+import { getCareerStages, getMockSession } from "../../auth/mockAuth";
+
 export default function CareerJourneyPage() {
-  return <div><div className="page-heading"><div className="eyebrow">CAREER JOURNEY</div><h1>From JL5 to your next level</h1><p>Use your goals, knowledge, evidence and impact to build a stronger case for your next career step.</p></div><div className="career-journey-detail"><div className="career-level"><span>JL4</span><strong>Build & deliver</strong><p>Grow technical depth and deliver reliably.</p></div><div className="career-level current"><span>JL5 · YOU ARE HERE</span><strong>Lead & influence</strong><p>Lead technical direction, mentor others and create impact beyond individual delivery.</p></div><div className="career-level"><span>JL6</span><strong>Lead at scale</strong><p>Shape architecture, strategy and outcomes across a broader organisation.</p></div></div><section className="surface-card"><div className="card-eyebrow">YOUR NEXT STEP</div><h2>Build the evidence for broader leadership</h2><p>MyImpact will progressively connect your actual goals, evidence and impact with the expectations for the next level.</p></section></div>;
+  const session = getMockSession();
+  const [previousStage, currentStage, nextStage] = getCareerStages(session?.careerLevel ?? 5);
+
+  return (
+    <div>
+      <div className="page-heading">
+        <div className="eyebrow">CAREER JOURNEY</div>
+        <h1>Your career journey</h1>
+        <p>{session?.role ? `Your current role is ${session.role}. ` : ""}Use your goals, milestones, evidence and impact to build a stronger case for your next career step.</p>
+      </div>
+      <div className="career-journey-detail">
+        {[previousStage, currentStage, nextStage].map((stage, index) => (
+          <div className={`career-level${index === 1 ? " current" : ""}`} key={stage.level}>
+            <span>{stage.label}{index === 1 ? " · YOU ARE HERE" : ""}</span>
+            <strong>{stage.title}</strong>
+            <p>{stage.description}</p>
+          </div>
+        ))}
+      </div>
+      <section className="surface-card">
+        <div className="card-eyebrow">YOUR NEXT STEP</div>
+        <h2>Build evidence for your next career step</h2>
+        <p>Connect your goals, evidence and impact to show how your work supports your growth.</p>
+      </section>
+    </div>
+  );
 }
