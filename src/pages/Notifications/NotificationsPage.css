@@ -1,0 +1,46 @@
+.notification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.notification-read-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.notification-read-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.notification-activity {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  color: #344054;
+  font-size: 13px;
+}
+
+.notification-activity summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.notification-activity-item {
+  padding: 12px 0 0;
+  color: #475467;
+}
+
+.notification-activity-item p {
+  margin: 5px 0;
+}
+
+.notification-activity-item small {
+  color: #667085;
+}

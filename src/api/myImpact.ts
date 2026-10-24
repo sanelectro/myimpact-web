@@ -1,4 +1,9 @@
-import { getCurrentUserIdForApi, apiRequest } from "./client";
+import {
+  getCurrentUserIdForApi,
+  apiFileRequest,
+  apiRequest,
+  authRequest,
+} from "./client";
 import type {
   Goal,
   GoalStatusHistory,
@@ -18,10 +23,25 @@ import type {
   GoalMilestoneCreateRequest,
   GoalMilestoneUpdateRequest,
   Archives,
+  DiscoveredEvidence,
+  EvidenceDiscoveryRequest,
+  SourceConnection,
+  ProfileRole,
+  ReportingManagerOption,
+  DirectReportOption,
+  TeamOption,
+  UserProfile,
+  AdminUser,
+  AdminCompany,
+  AdminCompanyUpdateRequest,
+  AdminUserInvitation,
+  AdminUserInvitationRequest,
+  PendingEvidenceApproval,
+  Notification,
 } from "../types/api";
 
-function userQuery() {
-  return `?user_id=${encodeURIComponent(getCurrentUserIdForApi())}`;
+function userQuery(userId?: string) {
+  return `?user_id=${encodeURIComponent(userId ?? getCurrentUserIdForApi())}`;
 }
 
 const API_BASE_URL =
@@ -30,6 +50,154 @@ const API_BASE_URL =
 
 export function getGoals() {
   return apiRequest<Goal[]>(`/api/v1/goals${userQuery()}`);
+}
+
+export function getUserGoals(userId: string) {
+  return apiRequest<Goal[]>(`/api/v1/goals${userQuery(userId)}`);
+}
+
+export function getAllCompanyUsers() {
+  return apiRequest<AdminUser[]>("/api/v1/admin/users");
+}
+
+export function getAdminCompanies() {
+  return apiRequest<AdminCompany[]>("/api/v1/admin/companies");
+}
+
+export function updateAdminCompany(
+  companyId: string,
+  payload: AdminCompanyUpdateRequest,
+) {
+  return apiRequest<AdminCompany>(
+    `/api/v1/admin/companies/${encodeURIComponent(companyId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function inviteCompanyUser(payload: AdminUserInvitationRequest) {
+  return authRequest<AdminUserInvitation>("/admin/users/invitations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function setCompanyUserActive(userId: string, isActive: boolean) {
+  return authRequest<{ id: string; is_active: boolean }>(
+    `/admin/users/${encodeURIComponent(userId)}/status`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_active: isActive }),
+    },
+  );
+}
+
+export function getProfile() {
+  return apiRequest<UserProfile>("/api/v1/profile");
+}
+
+export function getPendingEvidenceApprovals() {
+  return apiRequest<PendingEvidenceApproval[]>(
+    "/api/v1/evidence-approvals/pending",
+  );
+}
+
+export function decideEvidenceApproval(
+  approvalId: string,
+  decision: "approved" | "rejected" | "needs_information",
+  comment: string,
+) {
+  return apiRequest<{
+    id: string;
+    status: string;
+    manager_comment: string | null;
+    reviewed_at: string | null;
+  }>(`/api/v1/evidence-approvals/${encodeURIComponent(approvalId)}/decision`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ decision, comment: comment.trim() || null }),
+  });
+}
+
+export function resubmitEvidence(
+  approvalId: string,
+  payload: {
+    title: string;
+    description: string | null;
+    source_url: string | null;
+    notes: string;
+  },
+) {
+  return apiRequest<{
+    approval_id: string;
+    evidence_id: string;
+    status: string;
+    notification_id: string;
+  }>(`/api/v1/evidence-approvals/${encodeURIComponent(approvalId)}/resubmit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getNotifications() {
+  return apiRequest<Notification[]>("/api/v1/notifications");
+}
+
+export function markNotificationRead(notificationId: string) {
+  return apiRequest<Notification>(
+    `/api/v1/notifications/${encodeURIComponent(notificationId)}/read`,
+    { method: "PATCH" },
+  );
+}
+
+export function getTeams(company: string) {
+  const query = new URLSearchParams({ company });
+  return apiRequest<TeamOption[]>(`/api/v1/profile/teams?${query.toString()}`);
+}
+
+export function getReportingManagers(
+  company: string,
+  role?: ProfileRole,
+  team?: string,
+) {
+  const query = new URLSearchParams({ company });
+  if (role) query.set("role", role);
+  if (team) query.set("team", team);
+  return apiRequest<ReportingManagerOption[]>(
+    `/api/v1/profile/reporting-managers?${query.toString()}`,
+  );
+}
+
+export function updateProfile(payload: {
+  company: string;
+  team: string | null;
+  role: ProfileRole | null;
+  reporting_manager_id: string | null;
+}) {
+  return apiRequest<UserProfile & {
+    reporting_manager_options: ReportingManagerOption[];
+  }>("/api/v1/profile", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateDirectReportRole(userId: string, role: ProfileRole) {
+  return apiRequest<DirectReportOption>(
+    `/api/v1/profile/direct-reports/${encodeURIComponent(userId)}/role`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    },
+  );
 }
 
 export function getArchives() {
@@ -136,9 +304,9 @@ export function getGoalAssessment(goalId: string) {
   );
 }
 
-export function getGoalEvidence(goalId: string) {
+export function getGoalEvidence(goalId: string, userId?: string) {
   return apiRequest<GoalEvidence[]>(
-    `/api/v1/goals/${encodeURIComponent(goalId)}/evidence${userQuery()}`,
+    `/api/v1/goals/${encodeURIComponent(goalId)}/evidence${userQuery(userId)}`,
   );
 }
 
@@ -150,6 +318,36 @@ export function createGoalEvidence(payload: GoalEvidenceCreateRequest) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+    },
+  );
+}
+
+export function getSourceConnections() {
+  return apiRequest<SourceConnection[]>(`/api/v1/integrations/connections${userQuery()}`);
+}
+
+export function getSourceAuthorizationUrl(provider: "github" | "jira", goalId: string) {
+  return apiRequest<{ authorization_url: string }>(
+    `/api/v1/integrations/${provider}/authorize${userQuery()}&goal_id=${encodeURIComponent(goalId)}`,
+  );
+}
+
+export function disconnectSource(provider: "github" | "jira") {
+  return apiRequest<void>(`/api/v1/integrations/${provider}${userQuery()}`, {
+    method: "DELETE",
+  });
+}
+
+export function discoverGoalEvidence(
+  goalId: string,
+  payload: EvidenceDiscoveryRequest,
+) {
+  return apiRequest<DiscoveredEvidence[]>(
+    `/api/v1/integrations/goals/${encodeURIComponent(goalId)}/evidence-discovery${userQuery()}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     },
   );
 }
@@ -182,6 +380,16 @@ export function getEvidenceFileUrl(documentId: string) {
   return `${API_BASE_URL}/api/v1/knowledge/documents/${encodeURIComponent(documentId)}/file${userQuery()}`;
 }
 
+export async function downloadEvidenceFile(url: string, title: string) {
+  const file = await apiFileRequest(url);
+  const objectUrl = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = title.replace(/[\\/:*?"<>|]/g, "_") || "evidence";
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+}
+
 export function createEvidenceMapping(payload: EvidenceMappingCreateRequest) {
   return apiRequest<{ id: string }>("/evidence-mappings", {
     method: "POST",
@@ -190,9 +398,9 @@ export function createEvidenceMapping(payload: EvidenceMappingCreateRequest) {
   });
 }
 
-export function getGoalImpact(goalId: string) {
+export function getGoalImpact(goalId: string, userId?: string) {
   return apiRequest<ImpactAssessment[]>(
-    `/api/v1/goals/${encodeURIComponent(goalId)}/impact${userQuery()}`,
+    `/api/v1/goals/${encodeURIComponent(goalId)}/impact${userQuery(userId)}`,
   );
 }
 

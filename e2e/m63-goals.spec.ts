@@ -63,17 +63,17 @@ async function json(route: Route, status: number, body: unknown) {
 }
 
 async function installMockApi(page: Page, state: MockState) {
-  await page.addInitScript(() => {
-    localStorage.setItem(
-      "myimpact.mock-session",
-      JSON.stringify({
-        userId: "user-1",
-        username: "alex",
-        displayName: "Alex Johnson",
+  await page.route("**/auth/refresh", async (route) => {
+    await json(route, 200, {
+      access_token: "test-access-token",
+      expires_in: 3600,
+      user: {
+        id: "user-1",
+        name: "Alex Johnson",
+        email: "alex@example.com",
         role: "Lead Software Engineer",
-        careerLevel: 5,
-      }),
-    );
+      },
+    });
   });
 
   await page.route("**/api/v1/**", async (route) => {
@@ -84,6 +84,20 @@ async function installMockApi(page: Page, state: MockState) {
     const goalIdMatch = path.match(/^\/api\/v1\/goals\/([^/]+)(?:\/(.*))?$/);
     const goalId = goalIdMatch?.[1] ? decodeURIComponent(goalIdMatch[1]) : undefined;
     const action = goalIdMatch?.[2];
+
+    if (path === "/api/v1/profile" && method === "GET") {
+      return json(route, 200, {
+        user_id: "user-1",
+        name: "Alex Johnson",
+        email: "alex@example.com",
+        company: "MyImpact E2E",
+        organization_id: "organization-1",
+        role: "Lead Software Engineer",
+        reporting_manager_id: null,
+        reporting_manager: null,
+        direct_reports: [],
+      });
+    }
 
     if (path === "/api/v1/goals" && method === "GET") {
       return json(route, 200, state.goals.filter((goal) => goal.status !== "archived"));
@@ -159,6 +173,7 @@ async function installMockApi(page: Page, state: MockState) {
           source_type: "personal",
           source_url: null,
           captured_at: now,
+          milestone_id: null,
           relevance: "high",
           confidence: 0.95,
           reason: "Directly supports the goal.",
@@ -301,6 +316,11 @@ test("manual goal CRUD, all scopes, and the full lifecycle work in the UI", asyn
         .locator(".goal-scope-pill"),
     ).toHaveText(scope[0].toUpperCase() + scope.slice(1));
   }
+
+  await expect(page.locator(".goal-category-section")).toHaveCount(3);
+  for (const category of ["Personal", "Team", "Organization"]) {
+    await expect(page.getByRole("heading", { name: `${category} goals` })).toBeVisible();
+  }
 });
 
 test("dashboard and goal detail use the same assessment, and detail links evidence to impact", async ({ page }) => {
@@ -314,12 +334,25 @@ test("dashboard and goal detail use the same assessment, and detail links eviden
   await expect(dashboardGoalCard.locator(".progress-card-meta")).toContainText("1/1 active goals met expectations");
 
   await page.goto("/goals");
-  await expect(page.locator(".goal-list-card").filter({ hasText: goal.title }).locator(".goal-progress-status")).toHaveText("Met expectations");
+  const goalCard = page.locator(".goal-list-card").filter({ hasText: goal.title });
+  await expect(goalCard.locator(".goal-progress-status")).toHaveText("Met expectations");
+  const progressFill = goalCard.locator(".goal-list-progress-fill");
+  await expect(progressFill).toHaveCSS("background-color", "rgb(37, 99, 235)");
+  await expect.poll(async () => progressFill.evaluate((fill) => {
+    const track = fill.parentElement;
+    return track ? fill.getBoundingClientRect().width / track.getBoundingClientRect().width : 0;
+  })).toBeGreaterThan(0.99);
   await page.goto(`/goals/${goal.id}`);
   await expect(page.getByRole("heading", { name: "Met Expectations" })).toBeVisible();
   await expect(page.getByText("Reduced deployment incidents")).toBeVisible();
   await expect(page.getByText("Deployment incidents fell by 30%.")).toBeVisible();
+  await expect(page.getByText("YOUR EVIDENCE")).toBeVisible();
+  await expect(page.getByText("Evidence progress")).toBeVisible();
+  await expect(page.getByText("NEXT STEPS")).toHaveCount(0);
   await expect(page.locator(".goal-progress")).toHaveCount(1);
+
+  await page.goto("/impact");
+  await expect(page.getByRole("heading", { name: "Optional: strengthen your story" })).toBeVisible();
 });
 
 test("goal document import reports drafts, skipped duplicates, and upload errors", async ({ page }) => {

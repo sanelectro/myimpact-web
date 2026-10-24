@@ -39,23 +39,48 @@ npm run dev
 ```
 
 Copy `.env.example` to `.env.local` when you need to override the local API URL.
+New account registration requires an organization name and associates the
+account with that organization's shared directory.
 
 ```text
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-### Local mock login
+### Local demo accounts
 
-The frontend includes client-side demo accounts for local testing:
+The local seed creates nine employee accounts and one MyImpact platform-admin
+account with real password hashes. Use the email for the selected account and the shared password provided as
+`DEMO_USER_PASSWORD` when running `myimpact-db/scripts/demo/seed_demo_data.sh`.
 
-| Username | Password | User |
+| Account | Email | Role |
 | --- | --- | --- |
-| `alex` | `alex123` | `user-1`, rich demo data |
-| `priya` | `priya123` | `user-2`, partial demo data |
-| `empty` | `empty123` | `user-empty`, empty state |
-| `user-3` | `jl4-demo` | `user-3`, JL-4 empty state |
+| Platform | `myimpact-admin@example.com` | MyImpact Platform Administrator |
+| JL1 | `user-tse@example.com` | Trainee Software Engineer |
+| JL2 | `user-jse@example.com` | Junior Software Engineer |
+| JL3 | `user-se@example.com` | Software Engineer |
+| JL4 | `user-sse@example.com` | Senior Software Engineer |
+| JL4 | `user-em@example.com` | Engineering Manager |
+| JL5 | `user-lse@example.com` | Lead Software Engineer |
+| JL5 | `user-lsa@example.com` | Lead Software Architect |
+| JL5 | `user-sem@example.com` | Senior Engineering Manager |
+| JL6 | `user-ed@example.com` | Engineering Director (Technical Director level) |
 
-This mock login only selects a user in the browser. Credentials are bundled with the frontend, and the API still accepts a caller-supplied `user_id`; this is not authentication or authorization and must not be used in production.
+For local mock GitHub/Jira discovery, set `SOURCE_DEMO_MOCKS_ENABLED=true` in
+`myimpact-ai/.env` and restart the AI service. This is development-only; when
+disabled, the existing OAuth and local-token source behavior is unchanged.
+
+### Platform administrator
+
+The MyImpact platform administrator has a separate console with a platform
+overview, customer account management, and a company information page. Company
+administrators can rename customer companies; the current company record stores
+the company name and uses it as the display identity throughout the workspace.
+
+### Manager evidence reviews
+
+Reporting managers can review direct reports' pending evidence from **Pending
+requests**. Every user can open **Notifications** to review manager decisions
+and mark updates as read.
 
 ### Validation
 
@@ -66,10 +91,14 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The Playwright goal acceptance tests start the Vite app on `127.0.0.1:5174`
-and use deterministic API fixtures for browser flows. Database-backed API and
-import coverage lives in `myimpact-ai/tests/integration`; document extraction
-with a live external LLM provider is not part of the browser test suite.
+Fixture-based Playwright tests start the Vite app on `127.0.0.1:5174` for
+browser flows. The real-stack document ingestion test can be run with
+`npm run test:e2e:m64`. Database-backed API and import coverage lives in
+`myimpact-ai/tests/integration`; document extraction with a live external LLM
+provider is not part of the browser test suite.
+
+See [Playwright E2E scenarios](./docs/playwright-scenarios.md) for current
+browser coverage and planned user journeys.
 
 ### Workspace scrolling
 

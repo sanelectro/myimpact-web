@@ -1,27 +1,41 @@
+import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
-import type { MockSession } from "../auth/mockAuth";
+import { getProfile } from "../api/myImpact";
+import type { AuthSession } from "../auth/auth";
 import "./AppShell.css";
 
 interface AppShellProps {
   children: ReactNode;
-  session: MockSession;
+  session: AuthSession;
   onLogout: () => void;
 }
 
 const navigation = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/goals", label: "Goals" },
-  { to: "/milestones", label: "Milestones" },
-  { to: "/evidence", label: "Evidence" },
   { to: "/archives", label: "Archives" },
+  { to: "/notifications", label: "Notifications" },
   { to: "/impact", label: "Impact" },
   { to: "/career", label: "Career Journey" },
+  { to: "/profile", label: "My Profile" },
   { to: "/reports", label: "1:1 & Reports" },
   { to: "/chat", label: "AI Assistant" },
 ];
 
 export default function AppShell({ children, session, onLogout }: AppShellProps) {
+  const profileQuery = useQuery({
+    queryKey: ["profile"],
+    queryFn: getProfile,
+  });
+  const isManager =
+    ["Engineering Manager", "Senior Engineering Manager", "Engineering Director"].includes(
+      session.role,
+    ) || Boolean(profileQuery.data?.direct_reports.length);
+  const managerNavigation = isManager
+    ? [{ to: "/pending-requests", label: "Pending requests" }]
+    : [];
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -34,7 +48,7 @@ export default function AppShell({ children, session, onLogout }: AppShellProps)
         </div>
 
         <nav className="navigation" aria-label="Main navigation">
-          {navigation.map((item) => (
+          {[...navigation.slice(0, 3), ...managerNavigation, ...navigation.slice(3)].map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

@@ -1,0 +1,246 @@
+.profile-page {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.profile-header {
+  margin: 24px 0;
+}
+
+.profile-header h1 {
+  margin: 8px 0 10px;
+  color: #172033;
+  font-size: clamp(32px, 4vw, 44px);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.profile-header p {
+  max-width: 760px;
+  margin: 0;
+  color: #667085;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.profile-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr);
+  align-items: start;
+  gap: 18px;
+}
+
+.profile-card {
+  padding: 26px 28px;
+  border: 1px solid #dfe4ec;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, .04);
+}
+
+.profile-card-heading h2 {
+  margin: 6px 0 8px;
+  color: #182230;
+  font-size: 21px;
+  letter-spacing: -.02em;
+}
+
+.profile-card-heading p {
+  margin: 0;
+  color: #667085;
+  font-size: 13px;
+}
+
+.profile-field {
+  display: grid;
+  gap: 7px;
+  margin-top: 22px;
+}
+
+.profile-field > span {
+  color: #344054;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.profile-field b {
+  color: #d92d20;
+}
+
+.profile-field input,
+.profile-field select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 10px;
+  background: #fff;
+  color: #182230;
+  font: inherit;
+  font-size: 14px;
+}
+
+.profile-field input:focus,
+.profile-field select:focus {
+  outline: 0;
+  border-color: #84aaf7;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .1);
+}
+
+.profile-field input:disabled,
+.profile-field select:disabled {
+  background: #f9fafb;
+  color: #98a2b3;
+}
+
+.profile-field small {
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.profile-hierarchy-note {
+  margin-top: 22px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f2f4f7;
+  color: #475467;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.profile-error {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #fecdca;
+  border-radius: 10px;
+  background: #fef3f2;
+  color: #b42318;
+  font-size: 13px;
+}
+
+.profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.profile-actions .button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 1px solid #2563eb;
+  border-radius: 9px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.profile-actions .button:disabled {
+  cursor: not-allowed;
+  opacity: .6;
+}
+
+.reporting-card {
+  display: grid;
+  gap: 22px;
+}
+
+.reporting-person {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid #dfe4ec;
+  border-radius: 12px;
+  background: #f8faff;
+}
+
+.reporting-person-label {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.reporting-person strong,
+.reporting-team strong {
+  color: #182230;
+  font-size: 13px;
+}
+
+.reporting-person > span:last-child,
+.reporting-team li > span {
+  color: #667085;
+  font-size: 12px;
+}
+
+.reporting-empty {
+  margin: 6px 0 0;
+  color: #98a2b3;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.reporting-team ul {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reporting-team li {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid #edf0f5;
+  border-radius: 10px;
+}
+
+.reporting-role-edit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.reporting-role-edit select {
+  flex: 1 1 180px;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #fff;
+  color: #182230;
+  font: inherit;
+  font-size: 12px;
+}
+
+.reporting-role-save {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reporting-role-save:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+@media (max-width: 760px) {
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-card {
+    padding: 22px;
+  }
+}

@@ -1,0 +1,51 @@
+.platform-admin-shell {
+  background: #f8faff;
+}
+
+.platform-admin-sidebar {
+  background: #101a2c;
+}
+
+.platform-admin-sidebar .brand-mark {
+  background: #dbeafe;
+  color: #1849a9;
+}
+
+.platform-admin-nav-label {
+  margin: 0 10px 10px;
+  color: #98a2b3;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+}
+
+.platform-admin-shell .nav-item.active {
+  background: #175cd3;
+}
+
+.platform-admin-shell .nav-item:hover:not(.active) {
+  background: #1d2939;
+}
+
+.platform-admin-sidebar-footer {
+  border-top: 1px solid #344054;
+  color: #98a2b3;
+}
+
+.platform-admin-topbar {
+  border-top: 3px solid #175cd3;
+}
+
+.platform-admin-shell .content {
+  max-width: 1440px;
+}
+
+@media (max-width: 680px) {
+  .platform-admin-nav-label {
+    display: none;
+  }
+
+  .platform-admin-sidebar .navigation {
+    margin-top: 4px;
+  }
+}

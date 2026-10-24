@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   getGoal,
   getGoalStatusHistory,
   getGoalAssessment,
   getGoalEvidence,
+  getGoalMilestones,
   getDocumentExpectations,
   getGoalImpact,
   getGoalInsight,
   createGoalEvidence,
+  resubmitEvidence,
   getEvidenceFileUrl,
+  downloadEvidenceFile,
   uploadEvidenceFile,
   approveGoal,
   activateGoal,
@@ -18,12 +21,19 @@ import {
   reopenGoal,
   deactivateGoal,
   archiveEvidence,
+  discoverGoalEvidence,
+  disconnectSource,
+  getSourceAuthorizationUrl,
+  getSourceConnections,
 } from "../../api/myImpact";
 import type {
   DocumentExpectation,
   GoalEvidence,
+  GoalMilestone,
   ImpactAssessment,
   KnowledgeDocument,
+  DiscoveredEvidence,
+  SourceConnection,
 } from "../../types/api";
 import GoalMilestones from "../../components/Milestones/GoalMilestones";
 import "./GoalDetail.css";
@@ -49,66 +59,21 @@ function formatGoalStatus(status: string) {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
+function dateInputValue(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
 function formatSubStatus(status: string) {
   return status.replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
-
-type Guidance = {
-  optional?: boolean;
-  title: string;
-  intro: string;
-  steps: [string, string][];
-};
 
 type GoalTransition =
   | { action: "approve" | "activate" | "complete" }
   | { action: "reopen"; reason: string };
 
-function getGuidance(status: string, qualifyingCount: number, expectedCount: number): Guidance | null {
-  if (status === "not_started") {
-    return {
-      title: "How to get started",
-      intro: `Your expectation is ${expectedCount} meaningful achievements with supporting evidence and demonstrated impact. Start with one concrete contribution you can own.`,
-      steps: [
-        ["Understand the goal", "Identify the problem, outcome or capability this goal is asking you to improve."],
-        ["Choose your first achievement", "Define one concrete contribution that moves the goal forward and can be clearly described."],
-        ["Capture evidence", "Keep the PR, design, dashboard, incident, document, metric or stakeholder feedback that proves the work happened."],
-        ["Demonstrate impact", "Capture the measurable difference your work created — for example time saved, incidents reduced, coverage increased or quality improved."],
-      ],
-    };
-  }
-
-  if (status === "in_progress") {
-    const remaining = Math.max(0, expectedCount - qualifyingCount);
-    return {
-      title: "Keep building toward the expected bar",
-      intro: `You have ${qualifyingCount} meaningful achievement${qualifyingCount === 1 ? "" : "s"} demonstrated. ${remaining} more ${remaining === 1 ? "achievement" : "achievements"} with evidence and impact will meet expectations.`,
-      steps: [
-        ["Complete the next meaningful contribution", "Prioritise work that materially advances the outcome rather than simply increasing activity."],
-        ["Keep the evidence connected", "Make sure each contribution has clear supporting evidence and a strong relationship to the goal."],
-        ["Make the impact measurable", "Prefer before-and-after outcomes such as time saved, incidents reduced, coverage increased or adoption improved."],
-      ],
-    };
-  }
-
-  if (status === "met") {
-    return {
-      optional: true,
-      title: "Optional: strengthen your story",
-      intro: "You have met the expected bar. Use these suggestions only if you want to make the impact easier to communicate in a 1:1 or review.",
-      steps: [
-        ["Keep evidence current", "Capture new contributions while the details and measurable outcomes are fresh."],
-        ["Deepen measurable impact", "Prefer outcomes that show scale, quality, reliability, efficiency, leadership or business value."],
-        ["Connect the story", "Use the strongest achievements to explain how your contribution advanced the goal."],
-      ],
-    };
-  }
-
-  return null;
-}
-
 export default function GoalDetailPage() {
   const { goalId } = useParams();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [showDeactivationForm, setShowDeactivationForm] = useState(false);
   const [showCompletionConfirm, setShowCompletionConfirm] = useState(false);
@@ -122,7 +87,29 @@ export default function GoalDetailPage() {
   const [evidenceSourceMode, setEvidenceSourceMode] = useState<"link" | "file">("link");
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [uploadedEvidenceDocument, setUploadedEvidenceDocument] = useState<KnowledgeDocument | null>(null);
+  const [fileDownloadError, setFileDownloadError] = useState("");
+  const [resubmissionApprovalId, setResubmissionApprovalId] = useState<string | null>(null);
+  const [resubmissionTitle, setResubmissionTitle] = useState("");
+  const [resubmissionDescription, setResubmissionDescription] = useState("");
+  const [resubmissionUrl, setResubmissionUrl] = useState("");
+  const [resubmissionNotes, setResubmissionNotes] = useState("");
   const [evidenceRelevance, setEvidenceRelevance] = useState<"low" | "medium" | "high">("medium");
+  const [evidenceMilestoneId, setEvidenceMilestoneId] = useState("");
+  const [evidenceEntryMode, setEvidenceEntryMode] = useState<"ai" | "manual">("ai");
+  const [discoveryStartDate, setDiscoveryStartDate] = useState(() => {
+    const date = new Date();
+    date.setUTCDate(date.getUTCDate() - 6);
+    return dateInputValue(date);
+  });
+  const [discoveryEndDate, setDiscoveryEndDate] = useState(() => dateInputValue(new Date()));
+  const [discoverySources, setDiscoverySources] = useState<Array<"github" | "jira">>([
+    "github",
+    "jira",
+  ]);
+  const [selectedDiscoveredEvidence, setSelectedDiscoveredEvidence] = useState<Set<string>>(
+    new Set(),
+  );
+  const [discoverySaveError, setDiscoverySaveError] = useState("");
   const goal = useQuery({
     queryKey: ["goal", goalId],
     queryFn: () => getGoal(goalId!),
@@ -182,6 +169,51 @@ export default function GoalDetailPage() {
     },
   });
 
+  const resubmitEvidenceMutation = useMutation({
+    mutationFn: ({
+      approvalId,
+      title,
+      description,
+      sourceUrl,
+      notes,
+    }: {
+      approvalId: string;
+      title: string;
+      description: string;
+      sourceUrl: string;
+      notes: string;
+    }) =>
+      resubmitEvidence(approvalId, {
+        title: title.trim(),
+        description: description.trim() || null,
+        source_url: sourceUrl.trim() || null,
+        notes: notes.trim(),
+      }),
+    onSuccess: async () => {
+      setResubmissionApprovalId(null);
+      setResubmissionNotes("");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["goal-evidence", goalId] }),
+        queryClient.invalidateQueries({ queryKey: ["goal-assessment", goalId] }),
+        queryClient.invalidateQueries({ queryKey: ["goal-impact", goalId] }),
+        queryClient.invalidateQueries({ queryKey: ["goal-insight", goalId] }),
+        queryClient.invalidateQueries({ queryKey: ["pending-evidence-approvals"] }),
+        queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+      ]);
+    },
+  });
+
+  async function handleEvidenceFileDownload(url: string, title: string) {
+    setFileDownloadError("");
+    try {
+      await downloadEvidenceFile(url, title);
+    } catch (error) {
+      setFileDownloadError(
+        error instanceof Error ? error.message : "Could not download the attached file.",
+      );
+    }
+  }
+
   const assessment = useQuery({
     queryKey: ["goal-assessment", goalId],
     queryFn: () => getGoalAssessment(goalId!),
@@ -192,6 +224,92 @@ export default function GoalDetailPage() {
     queryKey: ["goal-evidence", goalId],
     queryFn: () => getGoalEvidence(goalId!),
     enabled: Boolean(goalId),
+  });
+  const milestones = useQuery({
+    queryKey: ["goal-milestones", goalId],
+    queryFn: () => getGoalMilestones(goalId!),
+    enabled: Boolean(goalId),
+  });
+  const sourceConnections = useQuery({
+    queryKey: ["source-connections"],
+    queryFn: getSourceConnections,
+    enabled: showEvidenceForm,
+  });
+
+  const connectSourceMutation = useMutation({
+    mutationFn: (provider: "github" | "jira") =>
+      getSourceAuthorizationUrl(provider, goalId!),
+    onSuccess: ({ authorization_url }) => window.location.assign(authorization_url),
+  });
+
+  const disconnectSourceMutation = useMutation({
+    mutationFn: disconnectSource,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["source-connections"] });
+    },
+  });
+
+  const evidenceDiscoveryMutation = useMutation({
+    mutationFn: () =>
+      discoverGoalEvidence(goalId!, {
+        start_date: discoveryStartDate,
+        end_date: discoveryEndDate,
+        sources: discoverySources,
+        milestone_id: evidenceMilestoneId || null,
+      }),
+    onSuccess: () => {
+      setSelectedDiscoveredEvidence(new Set());
+      setDiscoverySaveError("");
+    },
+  });
+
+  const saveDiscoveredEvidenceMutation = useMutation({
+    mutationFn: async () => {
+      const selected = (evidenceDiscoveryMutation.data ?? []).filter((item) =>
+        selectedDiscoveredEvidence.has(item.id),
+      );
+      const saved: string[] = [];
+      const failures: string[] = [];
+      for (const item of selected) {
+        try {
+          await createGoalEvidence({
+            goalId: goalId!,
+            source_type: item.source_type,
+            source_id: item.source_id,
+            content_hash: null,
+            title: item.title,
+            description: item.summary,
+            source_url: item.source_url,
+            captured_at: item.captured_at,
+            source_updated_at: item.source_updated_at,
+            relevance: item.relevance,
+            milestone_id: evidenceMilestoneId || null,
+          });
+          saved.push(item.id);
+        } catch (error) {
+          failures.push(
+            `${item.title}: ${error instanceof Error ? error.message : "Could not save evidence."}`,
+          );
+        }
+      }
+      return { saved, failures };
+    },
+    onSuccess: async ({ saved, failures }) => {
+      setSelectedDiscoveredEvidence((previous) => {
+        const remaining = new Set(previous);
+        saved.forEach((id) => remaining.delete(id));
+        return remaining;
+      });
+      setDiscoverySaveError(failures.join(" "));
+      if (saved.length) {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["goal-evidence", goalId] }),
+          queryClient.invalidateQueries({ queryKey: ["goal-assessment", goalId] }),
+          queryClient.invalidateQueries({ queryKey: ["goal-impact", goalId] }),
+          queryClient.invalidateQueries({ queryKey: ["goal-insight", goalId] }),
+        ]);
+      }
+    },
   });
 
   const requirements = useQuery({
@@ -231,6 +349,7 @@ export default function GoalDetailPage() {
         source_url: sourceUrl,
         captured_at: new Date().toISOString(),
         relevance: evidenceRelevance,
+        milestone_id: evidenceMilestoneId || null,
       });
     },
     onSuccess: async () => {
@@ -241,6 +360,7 @@ export default function GoalDetailPage() {
       setEvidenceFile(null);
       setUploadedEvidenceDocument(null);
       setEvidenceRelevance("medium");
+      setEvidenceMilestoneId("");
       setShowEvidenceForm(false);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["goal-evidence", goalId] }),
@@ -282,13 +402,13 @@ export default function GoalDetailPage() {
   const assessmentStatus = assessmentData?.status ?? "not_started";
   const displayPercent = assessmentData?.progress_percentage ?? 0;
   const visualPercent = Math.min(100, displayPercent);
-  const guidance = assessmentData
-    ? getGuidance(
-        assessmentData.status,
-        assessmentData.qualifying_achievement_count,
-        assessmentData.expected_achievement_count,
-      )
-    : null;
+  const sourceConnected = (provider: SourceConnection["provider"]) =>
+      sourceConnections.data?.some(
+        (connection) => connection.provider === provider && connection.connected,
+      ) ?? false;
+  const selectedSourcesConnected =
+      discoverySources.length > 0 &&
+      discoverySources.every((provider) => sourceConnected(provider));
 
   return (
     <div className="goal-detail-page">
@@ -369,6 +489,16 @@ export default function GoalDetailPage() {
       {transitionMutation.isError && (
         <p className="form-error" role="alert">
           Could not update goal status: {transitionMutation.error instanceof Error ? transitionMutation.error.message : "Unknown error"}
+        </p>
+      )}
+      {searchParams.get("source_connected") && (
+        <p className="form-success" role="status">
+          {searchParams.get("source_connected") === "github" ? "GitHub" : "Jira"} connected. You can now discover evidence from it.
+        </p>
+      )}
+      {searchParams.get("source_error") && (
+        <p className="form-error" role="alert">
+          Could not connect {searchParams.get("source_error") === "github" ? "GitHub" : "Jira"}. Check the provider authorization and try again.
         </p>
       )}
 
@@ -542,30 +672,28 @@ export default function GoalDetailPage() {
           <p className="goal-assessment-description">
             {goalData.status === "completed"
               ? `The goal lifecycle is Completed. This evidence assessment remains ${formatSubStatus(assessmentStatus).toLowerCase()} and reflects evidence against the expected minimum; completing the goal does not change the assessment score.`
-              : assessmentData?.description ?? "Assessing your goal progress…"}
+              : assessmentData
+                ? "Evidence connected to this goal is assessed for its relevance and demonstrated impact."
+                : "Assessing evidence connected to this goal…"}
           </p>
         </div>
 
         <div className="goal-stat-grid">
           <div className="goal-stat">
-            <strong>{assessmentData?.achievement_count ?? evidenceItems.length}</strong>
-            <span>achievements</span>
+            <strong>{evidenceItems.length}</strong>
+            <span>evidence items</span>
           </div>
           <div className="goal-stat">
-            <strong>{assessmentData?.evidence_count ?? evidenceItems.length}</strong>
-            <span>supported by evidence</span>
-          </div>
-          <div className="goal-stat">
-            <strong>{assessmentData?.demonstrated_impact_count ?? 0}</strong>
+            <strong>{impactItems.length}</strong>
             <span>with demonstrated impact</span>
           </div>
           <div className="goal-stat">
             <strong>{displayPercent}%</strong>
-            <span>of expected minimum</span>
+            <span>evidence progress</span>
           </div>
         </div>
 
-        <div className="goal-progress" aria-label={`${displayPercent}% of expected minimum`}>
+        <div className="goal-progress" aria-label={`${displayPercent}% evidence progress`}>
           <div className="goal-progress-fill" style={{ width: `${visualPercent}%` }} />
         </div>
 
@@ -641,7 +769,7 @@ export default function GoalDetailPage() {
       </section>
 
       <section className="goal-detail-card">
-        <div className="card-eyebrow">YOUR ACHIEVEMENTS</div>
+        <div className="card-eyebrow">YOUR EVIDENCE</div>
         <div className="section-title-row">
           <div>
             <h2>{evidenceItems.length} pieces of evidence</h2>
@@ -652,6 +780,13 @@ export default function GoalDetailPage() {
               className="goal-edit-button"
               type="button"
               onClick={() => {
+                if (!showEvidenceForm) {
+                  setEvidenceEntryMode("ai");
+                  setSelectedDiscoveredEvidence(new Set());
+                  evidenceDiscoveryMutation.reset();
+                  saveDiscoveredEvidenceMutation.reset();
+                  setDiscoverySaveError("");
+                }
                 setShowEvidenceForm((visible) => !visible);
                 addEvidenceMutation.reset();
               }}
@@ -677,8 +812,237 @@ export default function GoalDetailPage() {
               addEvidenceMutation.mutate();
             }}
           >
-            <h3>Add evidence for this goal</h3>
-            <label htmlFor="goal-evidence-title">Achievement title</label>
+            <h3>Add evidence to this goal</h3>
+            <div className="evidence-entry-modes" role="tablist" aria-label="Evidence entry method">
+              <button
+                className={evidenceEntryMode === "ai" ? "is-active" : ""}
+                type="button"
+                role="tab"
+                aria-selected={evidenceEntryMode === "ai"}
+                onClick={() => setEvidenceEntryMode("ai")}
+              >
+                Discover with AI
+              </button>
+              <button
+                className={evidenceEntryMode === "manual" ? "is-active" : ""}
+                type="button"
+                role="tab"
+                aria-selected={evidenceEntryMode === "manual"}
+                onClick={() => setEvidenceEntryMode("manual")}
+              >
+                Add manually
+              </button>
+            </div>
+            <label htmlFor="goal-evidence-destination">Attach evidence to</label>
+            <select
+              id="goal-evidence-destination"
+              value={evidenceMilestoneId}
+              onChange={(event) => setEvidenceMilestoneId(event.target.value)}
+              disabled={addEvidenceMutation.isPending || milestones.isLoading}
+            >
+              <option value="">Goal directly</option>
+              {(milestones.data ?? []).map((milestone: GoalMilestone) => (
+                <option key={milestone.id} value={milestone.id}>{milestone.title}</option>
+              ))}
+            </select>
+            {milestones.isError && (
+              <p className="form-error" role="alert">
+                Could not load milestones, so evidence can only be attached directly to the goal: {milestones.error.message}
+              </p>
+            )}
+            {evidenceEntryMode === "ai" ? (
+              <div className="evidence-discovery-panel">
+                <p>
+                  Search your connected sources for work related to this {evidenceMilestoneId ? "milestone" : "goal"}.
+                  AI summaries include the original source link; review and select the items you want to attach.
+                </p>
+                <div className="evidence-connection-list">
+                  {(["github", "jira"] as const).map((provider) => {
+                    const connection = sourceConnections.data?.find(
+                      (item) => item.provider === provider,
+                    );
+                    return (
+                      <div className="evidence-connection-row" key={provider}>
+                        <span>
+                          <strong>{provider === "github" ? "GitHub" : "Jira"}</strong>
+                          <small>
+                            {sourceConnections.isLoading
+                              ? "Checking connection…"
+                              : connection?.connected
+                                ? connection.managed_locally
+                                  ? "Using local development credentials"
+                                  : `Connected as ${connection.account}`
+                                : "Not connected"}
+                          </small>
+                        </span>
+                        {connection?.connected ? (
+                          !connection.managed_locally && (
+                            <button
+                              className="goal-edit-button"
+                              type="button"
+                              disabled={disconnectSourceMutation.isPending}
+                              onClick={() => disconnectSourceMutation.mutate(provider)}
+                            >
+                              Disconnect
+                            </button>
+                          )
+                        ) : (
+                          <button
+                            className="goal-edit-button"
+                            type="button"
+                            disabled={sourceConnections.isLoading || connectSourceMutation.isPending}
+                            onClick={() => connectSourceMutation.mutate(provider)}
+                          >
+                            Connect
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {sourceConnections.isError && (
+                  <p className="form-error" role="alert">
+                    Could not load source connections: {sourceConnections.error.message}
+                  </p>
+                )}
+                {connectSourceMutation.isError && (
+                  <p className="form-error" role="alert">{connectSourceMutation.error.message}</p>
+                )}
+                {disconnectSourceMutation.isError && (
+                  <p className="form-error" role="alert">{disconnectSourceMutation.error.message}</p>
+                )}
+                <fieldset className="evidence-source-options">
+                  <legend>Search sources</legend>
+                  {(["github", "jira"] as const).map((provider) => (
+                    <label key={provider}>
+                      <input
+                        type="checkbox"
+                        checked={discoverySources.includes(provider)}
+                        onChange={(event) => {
+                          setDiscoverySources((previous) =>
+                            event.target.checked
+                              ? [...previous, provider]
+                              : previous.filter((source) => source !== provider),
+                          );
+                        }}
+                      />
+                      {provider === "github" ? "GitHub contributions" : "Delivered Jira stories"}
+                    </label>
+                  ))}
+                </fieldset>
+                <div className="evidence-date-range">
+                  <label htmlFor="evidence-discovery-start">From</label>
+                  <input
+                    id="evidence-discovery-start"
+                    type="date"
+                    value={discoveryStartDate}
+                    max={discoveryEndDate}
+                    onChange={(event) => setDiscoveryStartDate(event.target.value)}
+                  />
+                  <label htmlFor="evidence-discovery-end">To</label>
+                  <input
+                    id="evidence-discovery-end"
+                    type="date"
+                    value={discoveryEndDate}
+                    min={discoveryStartDate}
+                    onChange={(event) => setDiscoveryEndDate(event.target.value)}
+                  />
+                </div>
+                <button
+                  className="goal-edit-button evidence-submit-button"
+                  type="button"
+                  disabled={
+                    evidenceDiscoveryMutation.isPending ||
+                    !selectedSourcesConnected ||
+                    !discoverySources.length ||
+                    !discoveryStartDate ||
+                    !discoveryEndDate
+                  }
+                  onClick={() => evidenceDiscoveryMutation.mutate()}
+                >
+                  {evidenceDiscoveryMutation.isPending ? "Searching sources and summarizing…" : "Find related evidence"}
+                </button>
+                {evidenceDiscoveryMutation.isError && (
+                  <p className="form-error" role="alert">
+                    {evidenceDiscoveryMutation.error.message}
+                  </p>
+                )}
+                {evidenceDiscoveryMutation.isSuccess && (
+                  <div className="discovered-evidence-list">
+                    <h4>
+                      {evidenceDiscoveryMutation.data.length
+                        ? `${evidenceDiscoveryMutation.data.length} AI-suggested evidence item${evidenceDiscoveryMutation.data.length === 1 ? "" : "s"}`
+                        : "No related evidence found for this date range"}
+                    </h4>
+                    {evidenceDiscoveryMutation.data.map((item: DiscoveredEvidence) => (
+                      <div className="discovered-evidence-card" key={item.id}>
+                        <input
+                          type="checkbox"
+                          aria-label={`Select ${item.title} as evidence`}
+                          checked={selectedDiscoveredEvidence.has(item.id)}
+                          onChange={(event) =>
+                            setSelectedDiscoveredEvidence((previous) => {
+                              const next = new Set(previous);
+                              if (event.target.checked) next.add(item.id);
+                              else next.delete(item.id);
+                              return next;
+                            })
+                          }
+                        />
+                        <span className="discovered-evidence-content">
+                          <span className="discovered-evidence-meta">
+                            {item.source_type.toUpperCase()} · {formatDate(item.captured_at)}
+                            {item.repository ? ` · ${item.repository}` : ""}
+                            {item.status ? ` · ${item.status}` : ""}
+                          </span>
+                          <strong>{item.title}</strong>
+                          <span>{item.summary}</span>
+                          <span className={`tag evidence-relevance-${item.relevance}`}>
+                            {item.relevance} relevance
+                          </span>
+                          {item.source_url && (
+                            <a href={item.source_url} target="_blank" rel="noreferrer">
+                              View source ↗
+                            </a>
+                          )}
+                          {item.description && (
+                            <details>
+                              <summary>Source details</summary>
+                              <span>{item.description}</span>
+                            </details>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                    {discoverySaveError && (
+                      <p className="form-error" role="alert">{discoverySaveError}</p>
+                    )}
+                    {saveDiscoveredEvidenceMutation.isError && (
+                      <p className="form-error" role="alert">
+                        Could not save selected evidence: {saveDiscoveredEvidenceMutation.error.message}
+                      </p>
+                    )}
+                    {evidenceDiscoveryMutation.data.length > 0 && (
+                      <button
+                        className="goal-edit-button evidence-submit-button"
+                        type="button"
+                        disabled={
+                          !selectedDiscoveredEvidence.size ||
+                          saveDiscoveredEvidenceMutation.isPending
+                        }
+                        onClick={() => saveDiscoveredEvidenceMutation.mutate()}
+                      >
+                        {saveDiscoveredEvidenceMutation.isPending
+                          ? "Saving selected evidence…"
+                          : `Add ${selectedDiscoveredEvidence.size} selected item${selectedDiscoveredEvidence.size === 1 ? "" : "s"}`}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+            <label htmlFor="goal-evidence-title">Evidence title</label>
             <input
               id="goal-evidence-title"
               value={evidenceTitle}
@@ -771,6 +1135,8 @@ export default function GoalDetailPage() {
               <option value="medium">Somewhat relevant</option>
               <option value="low">Loosely related</option>
             </select>
+              </>
+            )}
             {addEvidenceMutation.isError && (
               <div className="form-error" role="alert">
                 {addEvidenceMutation.error.message}
@@ -784,25 +1150,29 @@ export default function GoalDetailPage() {
                 onClick={() => {
                   setShowEvidenceForm(false);
                   addEvidenceMutation.reset();
+                  evidenceDiscoveryMutation.reset();
+                  saveDiscoveredEvidenceMutation.reset();
                 }}
               >
                 Cancel
               </button>
-              <button
-                className="goal-edit-button evidence-submit-button"
-                type="submit"
-                disabled={addEvidenceMutation.isPending || !evidenceTitle.trim()}
-              >
-                {addEvidenceMutation.isPending ? "Saving…" : "Save evidence"}
-              </button>
+              {evidenceEntryMode === "manual" && (
+                <button
+                  className="goal-edit-button evidence-submit-button"
+                  type="submit"
+                  disabled={addEvidenceMutation.isPending || !evidenceTitle.trim()}
+                >
+                  {addEvidenceMutation.isPending ? "Saving…" : "Save evidence"}
+                </button>
+              )}
             </div>
           </form>
         )}
 
         {evidenceItems.length === 0 ? (
           <div className="empty-goal-state">
-            <strong>No achievements recorded yet</strong>
-            <span>Use the guidance below to turn this goal into your first concrete achievement.</span>
+            <strong>No evidence recorded yet</strong>
+            <span>Add evidence that shows your contribution and the outcome it supported.</span>
           </div>
         ) : (
           <div className="achievement-list">
@@ -814,17 +1184,40 @@ export default function GoalDetailPage() {
                     <div className="achievement-meta">
                       {item.source_type} · {formatDate(item.captured_at) ?? "Date not available"}
                     </div>
+                    <div className="achievement-meta">
+                      {item.milestone_id
+                        ? `Milestone: ${milestones.data?.find((milestone) => milestone.id === item.milestone_id)?.title ?? "Selected milestone"}`
+                        : "Attached directly to goal"}
+                    </div>
                     <strong className="achievement-title">{item.title}</strong>
                     {item.description && <p>{item.description}</p>}
                     {item.source_url && (
-                      <a className="evidence-proof-link" href={item.source_url} target="_blank" rel="noreferrer">
-                        {item.source_type === "document" ? "View attached file" : "Open supporting link"} ↗
-                      </a>
+                      item.source_type === "document" ? (
+                        <button
+                          className="evidence-proof-link"
+                          type="button"
+                          onClick={() => void handleEvidenceFileDownload(item.source_url!, item.title)}
+                        >
+                          Download attached file
+                        </button>
+                      ) : (
+                        <a className="evidence-proof-link" href={item.source_url} target="_blank" rel="noreferrer">
+                          Open supporting link ↗
+                        </a>
+                      )
+                    )}
+                    {fileDownloadError && item.source_type === "document" && (
+                      <p className="login-error" role="alert">{fileDownloadError}</p>
                     )}
                     {item.reason && <p className="achievement-reason">{item.reason}</p>}
                     <div className="tag-list achievement-tags">
                       <span className="tag">{item.relevance}</span>
                       <span className="tag">{Math.round(item.confidence * 100)}% confidence</span>
+                      {item.approval_status && (
+                        <span className="tag">
+                          Manager review: {item.approval_status.replaceAll("_", " ")}
+                        </span>
+                      )}
                       {itemImpact ? (
                         <span className="tag tag-positive">
                           {formatImpactType(itemImpact.impact_type)} impact
@@ -833,6 +1226,109 @@ export default function GoalDetailPage() {
                         <span className="tag">Impact not demonstrated yet</span>
                       )}
                     </div>
+                    {item.approval_comment && (
+                      <p className="achievement-review-comment">
+                        <strong>Manager feedback:</strong> {item.approval_comment}
+                      </p>
+                    )}
+                    {(item.approval_status === "rejected" ||
+                      item.approval_status === "needs_information") &&
+                      item.approval_id && (
+                        <>
+                          <button
+                            className="goal-edit-button"
+                            type="button"
+                            onClick={() => {
+                              resubmitEvidenceMutation.reset();
+                              if (resubmissionApprovalId === item.approval_id) {
+                                setResubmissionApprovalId(null);
+                                return;
+                              }
+                              setResubmissionApprovalId(item.approval_id!);
+                              setResubmissionTitle(item.title);
+                              setResubmissionDescription(item.description ?? "");
+                              setResubmissionUrl(item.source_url ?? "");
+                              setResubmissionNotes("");
+                            }}
+                          >
+                            {resubmissionApprovalId === item.approval_id
+                              ? "Cancel update"
+                              : "Update and resubmit"}
+                          </button>
+                          {resubmissionApprovalId === item.approval_id && (
+                            <form
+                              className="goal-evidence-form evidence-resubmission-form"
+                              onSubmit={(event) => {
+                                event.preventDefault();
+                                resubmitEvidenceMutation.mutate({
+                                  approvalId: item.approval_id!,
+                                  title: resubmissionTitle,
+                                  description: resubmissionDescription,
+                                  sourceUrl: resubmissionUrl,
+                                  notes: resubmissionNotes,
+                                });
+                              }}
+                            >
+                              <h3>Update evidence for manager review</h3>
+                              <label>
+                                Evidence title
+                                <input
+                                  value={resubmissionTitle}
+                                  maxLength={500}
+                                  onChange={(event) => setResubmissionTitle(event.target.value)}
+                                  required
+                                />
+                              </label>
+                              <label>
+                                Description
+                                <textarea
+                                  value={resubmissionDescription}
+                                  maxLength={5000}
+                                  onChange={(event) =>
+                                    setResubmissionDescription(event.target.value)
+                                  }
+                                />
+                              </label>
+                              <label>
+                                Source link
+                                <input
+                                  type="url"
+                                  value={resubmissionUrl}
+                                  maxLength={2000}
+                                  onChange={(event) => setResubmissionUrl(event.target.value)}
+                                />
+                              </label>
+                              <label>
+                                Reply to your manager
+                                <textarea
+                                  value={resubmissionNotes}
+                                  maxLength={4000}
+                                  onChange={(event) => setResubmissionNotes(event.target.value)}
+                                  required
+                                />
+                              </label>
+                              {resubmitEvidenceMutation.isError && (
+                                <p className="form-error" role="alert">
+                                  Could not resubmit evidence: {resubmitEvidenceMutation.error.message}
+                                </p>
+                              )}
+                              <button
+                                className="goal-edit-button"
+                                type="submit"
+                                disabled={
+                                  resubmitEvidenceMutation.isPending ||
+                                  !resubmissionTitle.trim() ||
+                                  !resubmissionNotes.trim()
+                                }
+                              >
+                                {resubmitEvidenceMutation.isPending
+                                  ? "Resubmitting…"
+                                  : "Send updated evidence"}
+                              </button>
+                            </form>
+                          )}
+                        </>
+                      )}
                     <button
                       className="goal-edit-button"
                       type="button"
@@ -883,45 +1379,6 @@ export default function GoalDetailPage() {
         </section>
       )}
 
-      {guidance && (
-        <section className={`goal-detail-card next-steps-card ${guidance.optional ? "next-steps-optional" : ""}`}>
-          <div className="card-eyebrow">{guidance.optional ? "OPTIONAL NEXT STEPS" : "NEXT STEPS"}</div>
-          <div className="section-title-row">
-            <div>
-              <h2>{guidance.title}</h2>
-              <p>{guidance.intro}</p>
-            </div>
-          </div>
-          {guidance.optional ? (
-            <details className="guidance-details">
-              <summary>Show optional suggestions</summary>
-              <div className="guidance-list">
-                {guidance.steps.map(([title, description], index) => (
-                  <div className="guidance-item" key={title}>
-                    <div className="guidance-number">{index + 1}</div>
-                    <div>
-                      <strong>{title}</strong>
-                      <p>{description}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </details>
-          ) : (
-            <div className="guidance-list">
-              {guidance.steps.map(([title, description], index) => (
-                <div className="guidance-item" key={title}>
-                  <div className="guidance-number">{index + 1}</div>
-                  <div>
-                    <strong>{title}</strong>
-                    <p>{description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
     </div>
   );
 }

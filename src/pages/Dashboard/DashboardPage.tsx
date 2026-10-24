@@ -1,16 +1,15 @@
 import "./Dashboard.css";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { getMockSession, getCareerStages } from "../../auth/mockAuth";
+import { getAuthSession, getCareerStages } from "../../auth/auth";
 import {
   getGoalEvidence,
   getGoalAssessment,
   getGoalImpact,
   getGoalInsight,
-  getGoalMilestones,
   getGoals,
 } from "../../api/myImpact";
-import type { GoalAssessment, GoalEvidence, GoalMilestone, ImpactAssessment } from "../../types/api";
+import type { GoalAssessment, GoalEvidence, ImpactAssessment } from "../../types/api";
 
 function ProgressCard({
   to,
@@ -97,7 +96,7 @@ function RecentAchievements({ assessments }: { assessments: ImpactAssessment[] }
 }
 
 export default function DashboardPage() {
-  const session = getMockSession();
+  const session = getAuthSession();
   const currentLevel = session?.careerLevel ?? 5;
   const [previousStage, currentStage, nextStage] = getCareerStages(currentLevel);
   const currentPosition = session?.role.startsWith("JL-")
@@ -129,15 +128,7 @@ export default function DashboardPage() {
     })),
   });
 
-  const milestoneQueries = useQueries({
-    queries: activeGoals.map((goal) => ({
-      queryKey: ["goal-milestones", goal.id],
-      queryFn: () => getGoalMilestones(goal.id),
-    })),
-  });
-
   const allEvidence: GoalEvidence[] = evidenceQueries.flatMap((query) => query.data ?? []);
-  const allMilestones: GoalMilestone[] = milestoneQueries.flatMap((query) => query.data ?? []);
   const allAssessments = impactQueries
     .flatMap((query) => query.data ?? [])
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -155,8 +146,6 @@ export default function DashboardPage() {
   const avgImpact = allAssessments.length
     ? allAssessments.reduce((sum, item) => sum + item.impact_score, 0) / allAssessments.length
     : 0;
-  const evidenceStrength = allEvidence.length ? Math.min(1, allEvidence.reduce((sum, item) => sum + item.confidence, 0) / allEvidence.length) : 0;
-  const completedMilestoneCount = allMilestones.filter((item) => item.status === "completed").length;
   const goalProgress = activeGoals.length
     ? Math.round(
         goalAssessments.reduce(
@@ -169,8 +158,8 @@ export default function DashboardPage() {
     (assessment) => assessment.status === "met" || assessment.status === "above",
   ).length;
 
-  const isLoading = goalsQuery.isLoading || evidenceQueries.some((query) => query.isLoading) || goalAssessmentQueries.some((query) => query.isLoading) || impactQueries.some((query) => query.isLoading) || milestoneQueries.some((query) => query.isLoading);
-  const queryError = goalsQuery.error ?? evidenceQueries.find((query) => query.error)?.error ?? goalAssessmentQueries.find((query) => query.error)?.error ?? impactQueries.find((query) => query.error)?.error ?? milestoneQueries.find((query) => query.error)?.error;
+  const isLoading = goalsQuery.isLoading || evidenceQueries.some((query) => query.isLoading) || goalAssessmentQueries.some((query) => query.isLoading) || impactQueries.some((query) => query.isLoading);
+  const queryError = goalsQuery.error ?? evidenceQueries.find((query) => query.error)?.error ?? goalAssessmentQueries.find((query) => query.error)?.error ?? impactQueries.find((query) => query.error)?.error;
 
   if (queryError) {
     return (
@@ -219,8 +208,6 @@ export default function DashboardPage() {
             <div className="section-heading"><div><div className="card-eyebrow">YOUR OVERALL PROGRESS</div><h2>How are you doing?</h2></div><p>Open any area to see the details behind the status.</p></div>
             <div className="progress-grid">
               <ProgressCard to="/goals" icon="🎯" title="Goals" status={`${goalProgress}%`} description="Average qualifying-achievement progress against each active goal’s expected minimum." meta={`${goalsMeetingExpectations}/${activeGoals.length} active goals met expectations`} />
-              <ProgressCard to="/milestones" icon="🧭" title="Milestones" status={allMilestones.length ? `${completedMilestoneCount}/${allMilestones.length}` : "Getting started"} description="Which meaningful steps are moving my goals forward?" meta={`${allMilestones.length} milestone${allMilestones.length === 1 ? "" : "s"} · ${completedMilestoneCount} completed`} />
-              <ProgressCard to="/evidence" icon="📝" title="Evidence" status={progressStatus(evidenceStrength)} description="How well can I prove what I’ve done?" meta={`${allEvidence.length} achievement${allEvidence.length === 1 ? "" : "s"} captured`} />
               <ProgressCard to="/impact" icon="🚀" title="Impact" status={progressStatus(avgImpact)} description="How much difference is my work making?" meta={`${allAssessments.length} impact result${allAssessments.length === 1 ? "" : "s"} · ${new Set(allAssessments.map((a) => a.impact_type)).size} areas`} />
             </div>
           </section>

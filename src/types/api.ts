@@ -1,6 +1,82 @@
 export type GoalStatus = "draft" | "approved" | "active" | "completed" | "archived";
 export type GoalSubStatus = "needs_review" | "ready_for_approval" | "not_started" | "on_track" | "at_risk" | "off_track" | "completed" | "none";
-export type GoalScope = "personal" | "team" | "organization";
+export type GoalCategory = "personal" | "team" | "organization";
+export type GoalScope = GoalCategory;
+export type ProfileRole =
+  | "Trainee Software Engineer"
+  | "Junior Software Engineer"
+  | "Software Engineer"
+  | "Senior Software Engineer"
+  | "Lead Software Engineer"
+  | "Lead Software Architect"
+  | "Engineering Manager"
+  | "Senior Engineering Manager"
+  | "Engineering Director";
+
+export interface ReportingManagerOption {
+  id: string;
+  name: string;
+  role: string;
+}
+
+export interface TeamOption {
+  id: string;
+  name: string;
+}
+
+export interface DirectReportOption {
+  id: string;
+  name: string;
+  role: string | null;
+}
+
+export interface UserProfile {
+  user_id: string;
+  name: string;
+  email: string;
+  company: string | null;
+  organization_id: string | null;
+  team: string | null;
+  role: string | null;
+  reporting_manager_id: string | null;
+  reporting_manager: ReportingManagerOption | null;
+  direct_reports: DirectReportOption[];
+  direct_report_role_options: ProfileRole[];
+}
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  company: string | null;
+  role: string | null;
+  is_active: boolean;
+  invitation_pending: boolean;
+}
+
+export interface AdminCompany {
+  id: string;
+  name: string;
+  user_count: number;
+  created_at: string;
+}
+
+export interface AdminCompanyUpdateRequest {
+  name: string;
+}
+
+export interface AdminUserInvitationRequest {
+  name: string;
+  email: string;
+  company: string;
+  role: string | null;
+}
+
+export interface AdminUserInvitation extends AdminUserInvitationRequest {
+  id: string;
+  invite_token: string;
+  expires_at: string;
+}
 
 export type ImpactType =
   | "technical"
@@ -18,7 +94,9 @@ export interface Goal {
   id: string;
   title: string;
   description: string | null;
-  scope: GoalScope;
+  scope: GoalCategory;
+  organization_id: string | null;
+  organization_name: string | null;
   start_date: string | null;
   end_date: string | null;
   status: GoalStatus;
@@ -94,14 +172,82 @@ export interface GoalAssessment {
 
 export interface GoalEvidence {
   evidence_id: string;
+  approval_id?: string | null;
+  approval_status?: EvidenceApprovalStatus | null;
+  approval_comment?: string | null;
+  milestone_id: string | null;
   title: string;
   description: string | null;
   source_type: string;
   source_url: string | null;
   captured_at: string;
+  source_updated_at?: string | null;
   relevance: string;
   confidence: number;
   reason: string | null;
+}
+
+export type EvidenceApprovalStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "needs_information";
+
+export interface PendingEvidenceApproval {
+  approval_id: string;
+  evidence_id: string;
+  employee_id: string;
+  employee_name: string;
+  goal_id: string;
+  goal_title: string;
+  goal_description: string | null;
+  goal_status: string;
+  goal_start_date: string | null;
+  goal_end_date: string | null;
+  milestone_id: string | null;
+  milestone_title: string | null;
+  milestone_description: string | null;
+  milestone_completion_criteria: string | null;
+  milestone_status: string | null;
+  milestone_due_date: string | null;
+  evidence_title: string;
+  evidence_description: string | null;
+  evidence_source_type: string;
+  evidence_source_url: string | null;
+  evidence_captured_at: string;
+  relevance: string;
+  confidence: number;
+  reason: string | null;
+  submitted_at: string;
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  related_path: string | null;
+  status: "read" | "unread";
+  metadata: Record<string, unknown>;
+  created_at: string;
+  read_at: string | null;
+  responses: NotificationResponseEntry[];
+  history: NotificationHistoryEntry[];
+}
+
+export interface NotificationResponseEntry {
+  id: string;
+  user_id: string;
+  response_text: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface NotificationHistoryEntry {
+  id: string;
+  event_type: string;
+  actor_user_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
 }
 
 export type EvidenceSourceType =
@@ -135,6 +281,7 @@ export interface EvidenceCreateRequest {
   description: string | null;
   source_url: string | null;
   captured_at: string;
+  source_updated_at?: string | null;
 }
 
 export interface EvidenceCreateResponse {
@@ -151,6 +298,7 @@ export interface EvidenceMappingCreateRequest {
 
 export interface GoalEvidenceCreateRequest {
   goalId: string;
+  milestone_id: string | null;
   source_type: EvidenceSourceType;
   source_id: string | null;
   content_hash: string | null;
@@ -158,7 +306,39 @@ export interface GoalEvidenceCreateRequest {
   description: string | null;
   source_url: string | null;
   captured_at: string;
+  source_updated_at?: string | null;
   relevance: "low" | "medium" | "high";
+}
+
+export interface SourceConnection {
+  provider: "github" | "jira";
+  connected: boolean;
+  account: string;
+  managed_locally: boolean;
+}
+
+export interface EvidenceDiscoveryRequest {
+  start_date: string;
+  end_date: string;
+  sources: Array<"github" | "jira">;
+  milestone_id: string | null;
+}
+
+export interface DiscoveredEvidence {
+  id: string;
+  source_type: "github" | "jira";
+  source_id: string;
+  title: string;
+  description: string | null;
+  source_url: string | null;
+  captured_at: string;
+  source_updated_at: string | null;
+  summary: string;
+  relevance: "high" | "medium" | "low";
+  repository: string | null;
+  status: string | null;
+  issue_type: string | null;
+  jira_keys: string[];
 }
 
 export interface ImpactAssessment {
