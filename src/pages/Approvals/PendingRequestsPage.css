@@ -1,0 +1,99 @@
+.approval-request-list {
+  display: grid;
+  gap: 14px;
+}
+
+.approval-request summary {
+  cursor: pointer;
+  list-style-position: outside;
+  margin-left: 18px;
+}
+
+.approval-summary {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: #475467;
+}
+
+.approval-summary strong {
+  color: #101828;
+}
+
+.approval-details {
+  display: grid;
+  gap: 20px;
+  margin-top: 22px;
+}
+
+.approval-context {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.approval-context section {
+  padding-top: 14px;
+  border-top: 1px solid #eaecf0;
+}
+
+.approval-context h2,
+.approval-context h3 {
+  margin: 8px 0;
+}
+
+.approval-context h2 a {
+  color: #175cd3;
+}
+
+.approval-context p {
+  color: #475467;
+  line-height: 1.6;
+}
+
+.approval-context small {
+  color: #667085;
+}
+
+.approval-comment {
+  display: grid;
+  gap: 7px;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.approval-comment textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+}
+
+.approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.approval-actions button {
+  padding: 9px 13px;
+  border: 1px solid #d0d5dd;
+  border-radius: 7px;
+  background: #fff;
+  color: #344054;
+  cursor: pointer;
+}
+
+.approval-actions button:first-child {
+  border-color: #027a48;
+  background: #027a48;
+  color: #fff;
+}
+
+.approval-actions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}

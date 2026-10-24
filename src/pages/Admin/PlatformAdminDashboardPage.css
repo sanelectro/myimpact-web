@@ -1,0 +1,163 @@
+.platform-admin-dashboard {
+  display: grid;
+  gap: 22px;
+}
+
+.platform-admin-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px;
+  border: 1px solid #d6e4ff;
+  border-radius: 16px;
+  background: linear-gradient(120deg, #eff4ff, #fff 70%);
+}
+
+.platform-admin-hero h1 {
+  margin: 8px 0;
+  font-size: clamp(30px, 4vw, 42px);
+  letter-spacing: -0.03em;
+}
+
+.platform-admin-hero p {
+  max-width: 650px;
+  margin: 0;
+  color: #667085;
+  line-height: 1.6;
+}
+
+.platform-admin-hero .primary-link {
+  flex-shrink: 0;
+}
+
+.platform-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.platform-metric-card {
+  min-height: 145px;
+  padding: 20px;
+  border: 1px solid #eaecf0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.platform-metric-card strong {
+  display: block;
+  margin-top: 13px;
+  color: #101828;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.platform-metric-card p {
+  margin: 9px 0 0;
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.platform-admin-content-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 0.8fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.platform-company-card {
+  min-width: 0;
+}
+
+.platform-company-card .section-heading {
+  align-items: center;
+}
+
+.platform-company-card .section-heading h2,
+.platform-admin-actions h2 {
+  margin: 7px 0;
+  font-size: 20px;
+}
+
+.platform-company-table-wrap {
+  overflow-x: auto;
+}
+
+.platform-company-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.platform-company-table th,
+.platform-company-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #eaecf0;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.platform-company-table thead th {
+  color: #667085;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.platform-company-table tbody th {
+  color: #344054;
+  font-weight: 650;
+}
+
+.platform-company-table tbody td {
+  color: #475467;
+}
+
+.platform-company-table tbody tr:last-child th,
+.platform-company-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.platform-admin-actions p {
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.platform-admin-disabled-count {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid #eaecf0;
+  color: #475467;
+  font-size: 13px;
+}
+
+.platform-admin-disabled-count strong {
+  color: #101828;
+}
+
+@media (max-width: 900px) {
+  .platform-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .platform-admin-content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .platform-admin-hero {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 22px;
+  }
+
+  .platform-metric-grid {
+    grid-template-columns: 1fr;
+  }
+}

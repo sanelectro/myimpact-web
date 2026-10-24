@@ -1,7 +1,7 @@
-import { getCareerStages, getMockSession } from "../../auth/mockAuth";
+import { getAuthSession, getCareerStages } from "../../auth/auth";
 
 export default function CareerJourneyPage() {
-  const session = getMockSession();
+  const session = getAuthSession();
   const [previousStage, currentStage, nextStage] = getCareerStages(session?.careerLevel ?? 5);
 
   return (

@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   createGoal,
   getGoal,
+  getProfile,
   updateGoal,
 } from "../../api/myImpact";
 import type { GoalScope } from "../../types/api";
@@ -30,6 +31,10 @@ export default function GoalFormPage() {
     queryFn: () => getGoal(goalId!),
     enabled: isEdit,
   });
+  const profileQuery = useQuery({
+    queryKey: ["profile"],
+    queryFn: getProfile,
+  });
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -54,6 +59,9 @@ export default function GoalFormPage() {
       if (!title.trim()) throw new Error("Goal title is required.");
       if (startDate && endDate && endDate < startDate) {
         throw new Error("Target date cannot be before start date.");
+      }
+      if (scope === "organization" && !profileQuery.data?.organization_id) {
+        throw new Error("Add your company in My Profile before creating an organization-specific goal.");
       }
 
       const payload = {
@@ -106,7 +114,7 @@ export default function GoalFormPage() {
         <h1>{isEdit ? "Refine what you’re working toward" : "Create a new goal"}</h1>
         <p>
           {isEdit
-            ? "Update the goal definition without changing the achievements, evidence or impact already connected to it."
+            ? "Update the goal definition without changing the evidence or impact already connected to it."
             : "Define the outcome you want to work toward. New goals start as Draft so you can review them before activation."}
         </p>
       </header>
@@ -153,15 +161,29 @@ export default function GoalFormPage() {
                   name="scope"
                   value={option.value}
                   checked={scope === option.value}
+                  disabled={
+                    option.value === "organization"
+                    && !profileQuery.data?.organization_id
+                    && !(isEdit && goalQuery.data?.scope === "organization")
+                  }
                   onChange={() => setScope(option.value)}
                 />
                 <span className="scope-option-copy">
                   <strong>{option.label}</strong>
-                  <small>{option.description}</small>
+                  <small>
+                    {option.value === "organization" && (goalQuery.data?.organization_name || profileQuery.data?.company)
+                      ? `This goal is associated with ${goalQuery.data?.organization_name ?? profileQuery.data?.company} and remains private to you.`
+                      : option.description}
+                  </small>
                 </span>
               </label>
             ))}
           </div>
+          {!profileQuery.data?.organization_id && (
+            <p className="field-help">
+              Add your company in <Link to="/profile">My Profile</Link> to create organization-specific goals.
+            </p>
+          )}
         </div>
 
         <div className="form-section form-grid">

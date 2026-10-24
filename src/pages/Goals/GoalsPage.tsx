@@ -2,17 +2,19 @@ import { useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { getGoalAssessment, getGoals } from "../../api/myImpact";
-import type { Goal, GoalExpectationStatus } from "../../types/api";
+import type { Goal, GoalCategory, GoalExpectationStatus } from "../../types/api";
 import { getAvailableGoalYears, getCurrentGoalYear, isGoalInYear } from "./financialYear";
 import "./Goals.css";
+
+const goalCategories: GoalCategory[] = ["personal", "team", "organization"];
 
 function formatStatus(status: Goal["status"]) {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
-function formatScope(scope: Goal["scope"]) {
-  if (scope === "organization") return "Organization";
-  if (scope === "team") return "Team";
+function formatGoalCategory(category: GoalCategory) {
+  if (category === "organization") return "Organization";
+  if (category === "team") return "Team";
   return "Personal";
 }
 
@@ -37,6 +39,12 @@ export default function GoalsPage() {
   const years = getAvailableGoalYears(allGoals, currentYear);
   const hasUndatedGoals = allGoals.some((goal) => isGoalInYear(goal, "undated"));
   const goals = allGoals.filter((goal) => isGoalInYear(goal, selectedYear));
+  const goalsByCategory = goalCategories
+    .map((category) => ({
+      category,
+      goals: goals.filter((goal) => goal.scope === category),
+    }))
+    .filter((group) => group.goals.length > 0);
 
   const assessmentQueries = useQueries({
     queries: goals.map((goal) => ({
@@ -66,6 +74,9 @@ export default function GoalsPage() {
     : 0;
 
   const statuses = goals.map((_, index) => assessmentQueries[index]?.data?.status ?? "not_started");
+  const assessmentsByGoalId = new Map(
+    goals.map((goal, index) => [goal.id, assessmentQueries[index]?.data] as const),
+  );
   const aboveCount = statuses.filter((status) => status === "above").length;
   const metCount = statuses.filter((status) => status === "met").length;
   const inProgressCount = statuses.filter((status) => status === "in_progress").length;
@@ -93,7 +104,7 @@ export default function GoalsPage() {
             <div className="eyebrow">OVERALL PROGRESS</div>
             <div className="goals-overview-value">{overallProgress}%</div>
             <p>
-              {atOrAboveCount} of {totalGoals} goals are at or above the expected achievement bar.
+              {atOrAboveCount} of {totalGoals} goals are at or above the expected evidence bar.
             </p>
           </div>
         </div>
@@ -159,56 +170,82 @@ export default function GoalsPage() {
         </div>
       </div>
 
-      <div className="goal-list">
-        {goals.length === 0 ? (
-          <p className="goals-empty-state">
-            {selectedYear === "undated"
-              ? "No goals without financial-year dates."
-              : `No goals are assigned to ${selectedYear}.`}
-          </p>
-        ) : goals.map((goal, index) => {
-          const assessment = assessmentQueries[index]?.data;
-          const progress = assessment?.progress_percentage ?? 0;
-          const progressStatus = assessment?.status ?? "not_started";
-          const progressFill = Math.min(100, progress);
-
-          return (
-            <Link className="goal-list-card" to={`/goals/${goal.id}`} key={goal.id}>
-              <div className="goal-list-card-main">
-                <div className="goal-list-card-meta">
-                  <span className={`goal-status-pill goal-status-${goal.status}`}>{formatStatus(goal.status)}</span>
-                  <span className="goal-scope-pill">{formatScope(goal.scope)}</span>
-                </div>
-
-                <div className="goal-list-card-title-row">
-                  <h3>{goal.title}</h3>
-                  <span className={`goal-progress-status goal-progress-${progressStatus}`}>
-                    {formatExpectationStatus(progressStatus)}
-                  </span>
-                </div>
-
-                {goal.description && <p>{goal.description}</p>}
-
-                <div className="goal-progress-row">
-                  <div className="goal-progress-track" aria-label={`${progress}% accomplished`}>
-                    <div
-                      className={`goal-progress-fill goal-progress-fill-${progressStatus}`}
-                      style={{ width: `${progressFill}%` }}
-                    />
-                  </div>
-                  <strong className={`goal-progress-value goal-progress-value-${progressStatus}`}>
-                    {progress}%
-                  </strong>
-                </div>
-                <div className="goal-progress-caption">
-                  <span>Achievement progress</span>
-                </div>
+      {goals.length === 0 ? (
+        <p className="goals-empty-state">
+          {selectedYear === "undated"
+            ? "No goals without financial-year dates."
+            : `No goals are assigned to ${selectedYear}.`}
+        </p>
+      ) : (
+        <div className="goal-category-sections">
+          {goalsByCategory.map(({ category, goals: categoryGoals }) => (
+            <section
+              className="goal-category-section"
+              aria-labelledby={`goal-category-${category}`}
+              key={category}
+            >
+              <div className="goal-category-heading">
+                <h3 id={`goal-category-${category}`}>{formatGoalCategory(category)} goals</h3>
+                <span>{categoryGoals.length} {categoryGoals.length === 1 ? "goal" : "goals"}</span>
               </div>
-              <span className="goal-list-card-arrow" aria-hidden="true">→</span>
-            </Link>
-          );
-        })}
-      </div>
+              <div className="goal-list">
+                {categoryGoals.map((goal) => {
+                  const assessment = assessmentsByGoalId.get(goal.id);
+                  const progress = assessment?.progress_percentage ?? 0;
+                  const progressStatus = assessment?.status ?? "not_started";
+                  const progressFill = Math.min(100, progress);
+
+                  return (
+                    <Link className="goal-list-card" to={`/goals/${goal.id}`} key={goal.id}>
+                      <div className="goal-list-card-main">
+                        <div className="goal-list-card-meta">
+                          <span className={`goal-status-pill goal-status-${goal.status}`}>{formatStatus(goal.status)}</span>
+                          <span className="goal-scope-pill">{formatGoalCategory(goal.scope)}</span>
+                          {goal.scope === "organization" && goal.organization_name && (
+                            <span className="goal-scope-pill">{goal.organization_name}</span>
+                          )}
+                        </div>
+
+                        <div className="goal-list-card-title-row">
+                          <h3>{goal.title}</h3>
+                          <span className={`goal-progress-status goal-progress-${progressStatus}`}>
+                            {formatExpectationStatus(progressStatus)}
+                          </span>
+                        </div>
+
+                        {goal.description && <p>{goal.description}</p>}
+
+                        <div className="goal-progress-row">
+                          <div
+                            className="goal-progress-track"
+                            role="progressbar"
+                            aria-label={`${progress}% accomplished`}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-valuenow={progressFill}
+                          >
+                            <div
+                              className={`goal-list-progress-fill goal-list-progress-fill-${progressStatus}`}
+                              style={{ width: `${progressFill}%` }}
+                            />
+                          </div>
+                          <strong className={`goal-progress-value goal-progress-value-${progressStatus}`}>
+                            {progress}%
+                          </strong>
+                        </div>
+                        <div className="goal-progress-caption">
+                          <span>Evidence progress</span>
+                        </div>
+                      </div>
+                      <span className="goal-list-card-arrow" aria-hidden="true">→</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

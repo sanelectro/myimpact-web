@@ -146,6 +146,38 @@
 
 .goals-section-heading h2 { margin: 4px 0 0; }
 
+.goal-category-sections {
+  display: grid;
+  gap: 28px;
+  margin-top: 18px;
+}
+
+.goal-category-section { min-width: 0; }
+
+.goal-category-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.goal-category-heading h3 {
+  margin: 0;
+  color: #182230;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.goal-category-heading span {
+  color: #98a2b3;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.goal-category-section .goal-list { margin-top: 0; }
+
 .goals-year-filter {
   display: flex;
   align-items: center;
@@ -269,11 +301,11 @@
   background: #e9edf3;
 }
 
-.goal-progress-fill { height: 100%; border-radius: inherit; }
-.goal-progress-fill-above { background: #12b76a; }
-.goal-progress-fill-met { background: #2563eb; }
-.goal-progress-fill-in_progress { background: #8b5cf6; }
-.goal-progress-fill-not_started { background: #d0d5dd; }
+.goal-list-progress-fill { display: block; height: 100%; border-radius: inherit; }
+.goal-list-progress-fill-above { background: #12b76a; }
+.goal-list-progress-fill-met { background: #2563eb; }
+.goal-list-progress-fill-in_progress { background: #8b5cf6; }
+.goal-list-progress-fill-not_started { background: #d0d5dd; }
 
 .goal-progress-value {
   min-width: 48px;
