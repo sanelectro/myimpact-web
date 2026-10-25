@@ -25,10 +25,13 @@ Current specs:
   and exercises account registration and Workday document ingestion.
 - `e2e/m65-evidence-associations.spec.ts` covers goal- and milestone-level
   evidence association.
+- `e2e/m66-goal-assessment.spec.ts` covers assessment journeys, source access
+  failures with snapshot preservation and manual evidence entry, and retrying
+  failed criteria or assessment page loads.
 - `e2e/m69-platform-admin.spec.ts` covers platform overview, cross-company
   employee review, invitations, account status changes, company updates, and
   the customer-user admin-route redirect using deterministic fixtures. This
-  legacy M6.9-named spec covers M6.8 Admin Portal and Platform Access scope.
+  M6.9 admin spec covers Admin Portal and Platform Access scope.
 
 ## Authentication and session
 
@@ -128,27 +131,58 @@ are covered in `e2e/m62-dashboard.spec.ts`.
    goal detail and dashboard.
 4. Verify empty and error states when milestones cannot be loaded.
 
-## M6.6 Impact Analysis — Planned
+## M6.6 Goal Criteria and Evidence-Based Assessment — Implemented
 
-### Review evidence and monthly goal/milestone analysis
+### Review AI-proposed criteria and assess goal evidence
 
-1. Submit evidence for a goal or milestone and verify its review state is
-   visible to the employee and authorized reporting manager.
-2. Accept or reject submitted evidence; verify unreviewed and rejected
-   evidence does not contribute to analysis and resubmissions follow the
-   defined review state.
-3. Open monthly goal and milestone analysis and verify scores use accepted
-   evidence and agreed criterion weights.
-4. Verify score explanations link to their source goals, criteria, and
-   evidence, and distinguish AI proposals from employee-confirmed progress.
-5. Correct or confirm a proposed partial-progress value and verify the
-   resulting analysis reflects the employee's action.
-6. Verify gaps, uncertainty, and suggested next contributions are visible and
-   suggestions are not presented as completed work.
-7. Verify empty or weakly supported periods do not invent scores or
-   accomplishments and provide a clear explanation.
+1. Create a goal and request AI-proposed criteria; verify the proposals are
+   specific, observable, and relevant to that goal.
+2. Review, edit, and approve the criteria; verify the approved version is
+   visible on the goal and can be distinguished from an unapproved proposal.
+3. Attach supported evidence and request an assessment for each criterion;
+   verify assessments link to their source evidence and show rationale and
+   uncertainty, source validity, and the evidence review state. Verify that
+   unreviewed evidence is not presented as manager-verified.
+4. Verify AI assesses submitted evidence regardless of manager-review state,
+   while AI assessment, employee confirmation, and manager review remain
+   distinguishable.
+5. Compare assessment state on Goal detail and the Goals page; verify both
+   use the same deterministic progress and aggregation rules, and keep
+   criterion counts, goal progress, evidence coverage, and AI confidence
+   distinct.
+6. Materially edit a criterion and verify the prior assessment becomes
+   `OBSOLETE`, remains available in history, and does not contribute to current
+   summaries while reassessment is pending.
+7. Change evidence or a source and verify only affected assessments become
+   `STALE` and are reassessed; verify temporary source-access failures do not
+   invalidate the underlying achievement.
+8. Verify missing, ambiguous, or weak evidence is not presented as proof that
+   a criterion was met or not met, and errors are visible rather than hidden.
+9. Simulate missing or unavailable source providers and verify the failure
+   reason is persisted, stored evidence snapshots remain available, and the
+   user can open manual evidence entry from the source history.
+10. Fail criteria and assessment page-load requests, verify the reason is
+    shown, then use Retry and verify the data loads successfully.
 
-## M6.7 1:1 and Career Reports — Planned
+Backend source-retrieval persistence is covered by
+`tests/unit/services/test_goal_assessment.py` and
+`tests/integration/api/test_goal_assessment_workflow.py`.
+
+## M6.7 Impact Analysis — Planned
+
+### Review source-linked analysis of goal progress
+
+1. Select a monthly period and review the analysis built from validated M6.6
+   assessments.
+2. Follow factual statements to their source goals, criteria, and evidence;
+   verify generated narrative is distinguishable from source facts.
+3. Verify missing, weak, stale, or out-of-period evidence is surfaced as a gap
+   or uncertainty rather than an unsupported accomplishment.
+4. Verify analysis does not modify source goals, evidence, or assessments.
+5. Switch users and verify analysis and cited sources remain owner-scoped.
+6. Verify empty, loading, and recoverable error states.
+
+## M6.8 1:1 and Career Reports — Planned
 
 ### Prepare a 1:1 brief and create a career report
 
@@ -159,13 +193,13 @@ are covered in `e2e/m62-dashboard.spec.ts`.
 3. Save, revisit, and edit a draft; verify generation or saving does not share
    it with a manager or alter source goals, evidence, or assessments.
 4. Create a career report for a selected period and verify factual claims link
-   to in-period goals, accepted evidence, and impact analysis.
+   to in-period goals, eligible evidence, and validated M6.6/M6.7 results.
 5. Verify unsupported claims are omitted or flagged, and stale source data is
    visible after underlying goals or evidence change.
 6. Verify sharing and print/export are deliberate user actions, with clear
    empty, loading, and recoverable error states.
 
-## M6.8 Admin Portal and Platform Access
+## M6.9 Admin Portal and Platform Access
 
 ### Review customer accounts, invite users, and manage access — Implemented
 
@@ -178,30 +212,18 @@ are covered in `e2e/m62-dashboard.spec.ts`.
 6. Verify a customer user is redirected away from platform-admin screens.
 
 Covered in `e2e/m69-platform-admin.spec.ts` using deterministic API fixtures.
-The spec and its `test:e2e:m69` script retain their legacy M6.9 name; they
-cover M6.8 Admin Portal and Platform Access scope. These UI tests do not replace
-backend authorization tests or the integrated M6.8 authentication,
-organization-isolation, and cross-organization admin validation.
+These UI tests do not replace backend authorization tests or integrated M6.9
+authentication, organization-isolation, and cross-organization admin
+validation.
 
-## M6.9 AI Assistant — Planned
+## M6.10 End-to-End UX Validation
 
-The existing authenticated chat route alone does not satisfy the grounded
-assistant workflow. Add browser coverage when the user-authorized data
-grounding and source-link behavior are implemented:
-
-- Ask about the signed-in user's goals and evidence; verify answers are
-  grounded in authorized data and link to relevant sources.
-- Ask an ambiguous or unsupported question; verify the assistant requests
-  clarification or explains its limits instead of inventing facts.
-- Switch users and verify answers and cited sources never expose another
-  user's data.
-
-## M6.10 End-to-End UX Validation and Release Readiness
-
-Run the final browser regression after committed M6.6–M6.9 scope is integrated.
-Verify the connected user journey across auth, goals/documents, evidence,
-impact analysis, reports, admin workflows, and the AI assistant where included.
-Record environment, test results, known limitations, and release decision.
+Run the integrated browser regression after committed M6.6–M6.9 scope is
+implemented. Verify connected journeys across auth, goals/documents, evidence,
+goal assessments, Impact Analysis, reports, and admin workflows. Exercise
+representative empty, partial, error/retry, and authorization scenarios.
+Record environment, exact tests run, results, and unresolved integration
+defects. Release go/no-go is covered by M7.
 
 ## Additional cross-cutting scenarios
 
@@ -226,7 +248,7 @@ npm run test:e2e:m65
 npm run test:e2e:m69
 ```
 
-`test:e2e:m69` is the legacy script name for the M6.8 admin fixture suite.
+`test:e2e:m69` runs the M6.9 admin fixture suite.
 
 Run the complete M6.1–M6.5 browser suite, including the M6.4 real-stack
 ingestion journey, with:
@@ -242,10 +264,9 @@ provider. Set `DATABASE_URL` and the local auth/JWKS environment values before
 running it against a disposable database.
 
 M6.4 starts the local API and AI services and needs the configured document
-extraction provider. The M6.8 admin spec currently uses deterministic fixtures;
-its existence does not mean M6.8 integrated flows are release-validated. No
-M6.6, M6.7, M6.9, or M6.10 Playwright suite is included in the validated
-M6.1–M6.5 scope.
+extraction provider. The M6.9 admin spec currently uses deterministic fixtures;
+its existence does not mean M6.9 integrated flows are validated. No M6.6–M6.8
+or M6.10 Playwright suite is included in the validated M6.1–M6.5 scope.
 
 - Prefer accessible locators such as roles and labels; assert visible outcomes
   and navigation as a user would experience them.

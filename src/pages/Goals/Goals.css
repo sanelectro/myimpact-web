@@ -30,6 +30,13 @@
   white-space: nowrap;
 }
 
+button.goals-add-button { cursor: pointer; }
+button.goals-add-button:disabled { cursor: not-allowed; opacity: 0.6; }
+
+.goals-analysis-run { margin-bottom: 20px; padding: 18px 22px; }
+.goals-analysis-run h2 { margin: 0 0 8px; font-size: 1rem; }
+.goals-analysis-run ul { margin: 0; padding-left: 20px; }
+
 .goals-overview {
   overflow: hidden;
   margin-bottom: 38px;
@@ -123,6 +130,9 @@
 .health-met { background: #2563eb; }
 .health-in-progress { background: #8b5cf6; }
 .health-not-started { background: #e4e7ec; }
+.health-needs-review { background: #f79009; }
+.health-not-assessed { background: #98a2b3; }
+.health-unavailable { background: #d92d20; }
 
 .goal-health-legend {
   justify-content: flex-start;
@@ -285,6 +295,10 @@
 .goal-progress-met { background: #eff6ff; color: #175cd3; }
 .goal-progress-in_progress { background: #f4f3ff; color: #6941c6; }
 .goal-progress-not_started { background: #f2f4f7; color: #667085; }
+.goal-progress-not_assessed { background: #f2f4f7; color: #667085; }
+.goal-progress-needs_review { background: #fff6e5; color: #9a6700; }
+.goal-progress-unavailable { background: #fef3f2; color: #b42318; }
+.goals-assessment-error { color: #b42318; margin: 0 0 16px; }
 
 .goal-progress-row {
   display: grid;

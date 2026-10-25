@@ -1,6 +1,7 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { getGoalAssessment, getGoalImpact, getGoals } from "../../api/myImpact";
+import type { GoalAssessment } from "../../types/api";
 
 type Guidance = {
   optional?: boolean;
@@ -13,42 +14,56 @@ function label(value: string) {
   return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function getGuidance(status: string, qualifyingCount: number, expectedCount: number): Guidance | null {
-  if (status === "not_started") {
+function getGuidance(assessment: GoalAssessment): Guidance | null {
+  if (assessment.criteria_count === 0) return null;
+
+  if (assessment.assessed_criteria_count === 0) {
     return {
-      title: "How to get started",
-      intro: `Your expectation is ${expectedCount} meaningful achievements with supporting evidence and demonstrated impact. Start with one concrete contribution you can own.`,
+      title: "Start with evidence for your criteria",
+      intro: "No approved criteria have current assessments yet. Review the criteria and attach relevant evidence to begin.",
       steps: [
-        ["Understand the goal", "Identify the problem, outcome or capability this goal is asking you to improve."],
-        ["Choose your first achievement", "Define one concrete contribution that moves the goal forward and can be clearly described."],
-        ["Capture evidence", "Keep the PR, design, dashboard, incident, document, metric or stakeholder feedback that proves the work happened."],
-        ["Demonstrate impact", "Capture the measurable difference your work created — for example time saved, incidents reduced, coverage increased or quality improved."],
+        ["Review the criteria", "Confirm the approved criterion definitions reflect the goal."],
+        ["Attach relevant evidence", "Use source-linked evidence that can support or challenge a criterion assessment."],
       ],
     };
   }
 
-  if (status === "in_progress") {
-    const remaining = Math.max(0, expectedCount - qualifyingCount);
+  if (assessment.criteria.some(
+    (criterion) =>
+      criterion.result === "NEEDS_REVIEW"
+      || criterion.lifecycle_state === "STALE"
+      || criterion.lifecycle_state === "OBSOLETE",
+  )) {
     return {
-      title: "Keep building toward the expected bar",
-      intro: `You have ${qualifyingCount} meaningful achievement${qualifyingCount === 1 ? "" : "s"} demonstrated. ${remaining} more ${remaining === 1 ? "achievement" : "achievements"} with evidence and impact will meet expectations.`,
+      title: "Review the current evidence assessment",
+      intro: "One or more criterion assessments need review or may be out of date.",
       steps: [
-        ["Complete the next meaningful contribution", "Prioritise work that materially advances the outcome rather than simply increasing activity."],
-        ["Keep the evidence connected", "Make sure each contribution has clear supporting evidence and a strong relationship to the goal."],
-        ["Make the impact measurable", "Prefer before-and-after outcomes such as time saved, incidents reduced, coverage increased or adoption improved."],
+        ["Inspect the cited evidence", "Check source validity and whether the evidence supports or contradicts the conclusion."],
+        ["Reanalyze when inputs change", "Refresh the assessment after relevant evidence or criterion updates."],
       ],
     };
   }
 
-  if (status === "met") {
+  if (assessment.criteria_met_count === assessment.criteria_count) {
     return {
       optional: true,
-      title: "Optional: strengthen your story",
-      intro: "You have met the expected bar. Use these suggestions only if you want to make the impact easier to communicate in a 1:1 or review.",
+      title: "All assessed criteria are met",
+      intro: "Review the supporting evidence and rationale. An AI assessment is not manager approval.",
       steps: [
-        ["Keep evidence current", "Capture new contributions while the details and measurable outcomes are fresh."],
-        ["Deepen measurable impact", "Prefer outcomes that show scale, quality, reliability, efficiency, leadership or business value."],
-        ["Connect the story", "Use the strongest achievements to explain how your contribution advanced the goal."],
+        ["Confirm or challenge the assessment", "Record your feedback without changing the original AI assessment."],
+        ["Keep evidence current", "Reanalyze when criterion inputs or evidence change."],
+        ["Review source status", "Verify the evidence source and review state before relying on the conclusion."],
+      ],
+    };
+  }
+
+  if (assessment.goal_progress_percentage !== null) {
+    return {
+      title: "Continue making progress",
+      intro: `${assessment.criteria_met_count} of ${assessment.criteria_count} criteria are met. The calculated goal progress is ${assessment.goal_progress_percentage}%.`,
+      steps: [
+        ["Review partial criteria", "Check which evidence supports progress and what completion conditions remain."],
+        ["Add relevant evidence", "Attach evidence that demonstrates outcomes tied to the criterion."],
       ],
     };
   }
@@ -76,11 +91,7 @@ export default function ImpactPage() {
   );
   const guidanceItems = assessmentQueries.flatMap((query, index) => {
     if (!query.data) return [];
-    const guidance = getGuidance(
-      query.data.status,
-      query.data.qualifying_achievement_count,
-      query.data.expected_achievement_count,
-    );
+    const guidance = getGuidance(query.data);
     return guidance ? [{ ...guidance, goalId: activeGoals[index].id, goalTitle: activeGoals[index].title }] : [];
   });
   const assessmentError = assessmentQueries.find((query) => query.isError)?.error;

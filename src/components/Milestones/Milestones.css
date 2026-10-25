@@ -72,6 +72,59 @@
   font-size: 13px;
 }
 
+.milestone-suggestions {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid #d1e0ff;
+  border-radius: 12px;
+  background: #f5f8ff;
+}
+
+.milestone-suggestions h3 {
+  margin: 0 0 5px;
+}
+
+.milestone-suggestions p {
+  margin: 5px 0;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.milestone-suggestion-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid #e4e7ec;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.milestone-suggestion-card > div {
+  min-width: 0;
+}
+
+.milestone-suggestion-card > div > strong {
+  color: #344054;
+}
+
+.milestone-suggestion-card .goal-edit-button {
+  flex: 0 0 auto;
+}
+
+.milestone-suggestions-error {
+  margin: 16px 0;
+}
+
+.milestone-suggestions-error p {
+  color: #b42318;
+  font-size: 13px;
+}
+
 .milestone-card {
   display: flex;
   justify-content: space-between;
@@ -154,6 +207,11 @@
   color: #b42318;
 }
 
+.milestone-source {
+  color: #667085;
+  font-size: 11px;
+}
+
 .milestone-error {
   color: #b42318;
   font-size: 13px;
@@ -178,6 +236,14 @@
 
   .milestone-card-actions {
     margin-top: 12px;
+  }
+
+  .milestone-suggestion-card {
+    display: block;
+  }
+
+  .milestone-suggestion-card .goal-edit-button {
+    margin-top: 10px;
   }
 
   .milestone-form-fields {

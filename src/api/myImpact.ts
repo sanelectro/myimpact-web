@@ -12,7 +12,11 @@ import type {
   ImpactAssessment,
   KnowledgeDocument,
   GoalAssessment,
+  GoalAssessmentBatch,
+  GoalAssessmentFeedbackRequest,
   GoalCreateRequest,
+  GoalCriterion,
+  GoalCriterionRequest,
   GoalUpdateRequest,
   DocumentExpectation,
   EvidenceCreateRequest,
@@ -21,6 +25,7 @@ import type {
   GoalEvidenceCreateRequest,
   GoalMilestone,
   GoalMilestoneCreateRequest,
+  GoalMilestoneSuggestion,
   GoalMilestoneUpdateRequest,
   Archives,
   DiscoveredEvidence,
@@ -36,6 +41,9 @@ import type {
   AdminCompanyUpdateRequest,
   AdminUserInvitation,
   AdminUserInvitationRequest,
+  CompanyRoleDefinition,
+  CompanyRoleHistoryEvent,
+  CompanyRoleWriteRequest,
   PendingEvidenceApproval,
   Notification,
 } from "../types/api";
@@ -200,6 +208,43 @@ export function updateDirectReportRole(userId: string, role: ProfileRole) {
   );
 }
 
+export function getCompanyRoles() {
+  return apiRequest<CompanyRoleDefinition[]>("/api/v1/role-catalog/roles");
+}
+
+export function createCompanyRole(payload: CompanyRoleWriteRequest) {
+  return apiRequest<CompanyRoleDefinition>("/api/v1/role-catalog/roles", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateCompanyRole(
+  roleId: string,
+  payload: CompanyRoleWriteRequest,
+) {
+  return apiRequest<CompanyRoleDefinition>(
+    `/api/v1/role-catalog/roles/${encodeURIComponent(roleId)}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function deleteCompanyRole(roleId: string) {
+  return apiRequest<void>(
+    `/api/v1/role-catalog/roles/${encodeURIComponent(roleId)}`,
+    { method: "DELETE" },
+  );
+}
+
+export function getCompanyRoleHistory() {
+  return apiRequest<CompanyRoleHistoryEvent[]>("/api/v1/role-catalog/history");
+}
+
 export function getArchives() {
   return apiRequest<Archives>(`/api/v1/archives${userQuery()}`);
 }
@@ -255,6 +300,13 @@ export function getGoalMilestones(goalId: string) {
   );
 }
 
+export function getGoalMilestoneSuggestions(goalId: string) {
+  return apiRequest<GoalMilestoneSuggestion[]>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/milestones/suggestions${userQuery()}`,
+    { method: "POST" },
+  );
+}
+
 export function createGoalMilestone(payload: GoalMilestoneCreateRequest) {
   const { goalId, ...body } = payload;
   return apiRequest<GoalMilestone>(
@@ -301,6 +353,94 @@ export function updateGoal(goalId: string, payload: GoalUpdateRequest) {
 export function getGoalAssessment(goalId: string) {
   return apiRequest<GoalAssessment>(
     `/api/v1/goals/${encodeURIComponent(goalId)}/assessment${userQuery()}`,
+  );
+}
+
+export function reanalyzeGoal(goalId: string) {
+  return apiRequest<GoalAssessment>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/assessment/reanalyze${userQuery()}`,
+    { method: "POST" },
+  );
+}
+
+export function analyzeGoals(goalIds: string[]) {
+  return apiRequest<GoalAssessmentBatch>(`/api/v1/goals/assessment-runs${userQuery()}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ goal_ids: goalIds }),
+  });
+}
+
+export function getGoalCriteria(goalId: string) {
+  return apiRequest<GoalCriterion[]>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/criteria${userQuery()}`,
+  );
+}
+
+export function generateGoalCriteria(goalId: string) {
+  return apiRequest<GoalCriterion[]>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/criteria/generate${userQuery()}`,
+    { method: "POST" },
+  );
+}
+
+export function createGoalCriterion(goalId: string, request: GoalCriterionRequest) {
+  return apiRequest<GoalCriterion>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/criteria${userQuery()}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    },
+  );
+}
+
+export function updateGoalCriterion(
+  goalId: string,
+  criterionId: string,
+  request: GoalCriterionRequest,
+) {
+  return apiRequest<GoalCriterion>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/criteria/${encodeURIComponent(criterionId)}${userQuery()}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    },
+  );
+}
+
+export function approveGoalCriterionVersion(
+  goalId: string,
+  criterionId: string,
+  versionId: string,
+) {
+  return apiRequest<GoalCriterion>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/criteria/${encodeURIComponent(criterionId)}/versions/${encodeURIComponent(versionId)}/approve${userQuery()}`,
+    { method: "POST" },
+  );
+}
+
+export function retireGoalCriterion(goalId: string, criterionId: string) {
+  return apiRequest<void>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/criteria/${encodeURIComponent(criterionId)}${userQuery()}`,
+    { method: "DELETE" },
+  );
+}
+
+export function submitGoalAssessmentFeedback(
+  goalId: string,
+  criterionId: string,
+  assessmentId: string,
+  request: GoalAssessmentFeedbackRequest,
+) {
+  return apiRequest<GoalAssessment>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/criteria/${encodeURIComponent(criterionId)}/assessments/${encodeURIComponent(assessmentId)}/feedback${userQuery()}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    },
   );
 }
 

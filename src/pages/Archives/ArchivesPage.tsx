@@ -135,7 +135,9 @@ export default function ArchivesPage() {
             {milestones.map((item) => (
               <article className="archive-card surface-card" key={item.id}>
                 <div className="archive-card-content">
-                  <span className="archive-kind">Milestone · Archived {formatDate(item.archived_at)}</span>
+                  <span className="archive-kind">
+                    Milestone · {item.source === "ai" ? "AI suggested" : "Manually added"} · Archived {formatDate(item.archived_at)}
+                  </span>
                   <h2>{item.title}</h2>
                   <p>{item.description || item.completion_criteria || "No additional details."}</p>
                   <small>Goal: <Link to={`/goals/${item.goal_id}`}>{item.goal_title}</Link></small>

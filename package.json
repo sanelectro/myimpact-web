@@ -12,9 +12,10 @@
     "test:e2e:m61": "playwright test e2e/m61-auth-and-api-integration.spec.ts",
     "test:e2e:m62": "playwright test e2e/m62-dashboard.spec.ts",
     "test:e2e:m63": "playwright test e2e/m63-goals.spec.ts",
-    "test:e2e:m64": "MYIMPACT_E2E_REAL_STACK=1 playwright test e2e/m64-goal-document-ingestion.spec.ts",
+    "test:e2e:m64": "MYIMPACT_E2E_REAL_STACK=1 playwright test e2e/m64-goal-document-ingestion.spec.ts e2e/m64-goal-import.spec.ts",
     "test:e2e:m65": "playwright test e2e/m65-evidence-associations.spec.ts",
-    "test:e2e:m61-m65": "MYIMPACT_E2E_REAL_STACK=1 PLAYWRIGHT_BASE_URL=http://127.0.0.1:5175 MYIMPACT_E2E_AUTH_API_URL=http://127.0.0.1:8003 MYIMPACT_E2E_AI_API_URL=http://127.0.0.1:8002 playwright test e2e/m61-auth-and-api-integration.spec.ts e2e/m62-dashboard.spec.ts e2e/m63-goals.spec.ts e2e/m64-goal-document-ingestion.spec.ts e2e/m65-evidence-associations.spec.ts",
+    "test:e2e:m66": "playwright test e2e/m66-goal-assessment.spec.ts",
+    "test:e2e:m61-m65": "MYIMPACT_E2E_REAL_STACK=1 PLAYWRIGHT_BASE_URL=http://127.0.0.1:5175 MYIMPACT_E2E_AUTH_API_URL=http://127.0.0.1:8003 MYIMPACT_E2E_AI_API_URL=http://127.0.0.1:8002 playwright test e2e/m61-auth-and-api-integration.spec.ts e2e/m62-dashboard.spec.ts e2e/m63-goals.spec.ts e2e/m64-goal-document-ingestion.spec.ts e2e/m64-goal-import.spec.ts e2e/m65-evidence-associations.spec.ts",
     "test:e2e:m69": "playwright test e2e/m69-platform-admin.spec.ts",
     "preview": "vite preview"
   },

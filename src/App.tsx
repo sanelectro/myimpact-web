@@ -25,6 +25,8 @@ import ProfilePage from "./pages/Profile/ProfilePage";
 import PendingRequestsPage from "./pages/Approvals/PendingRequestsPage";
 import NotificationsPage from "./pages/Notifications/NotificationsPage";
 import AdminRoutes from "./pages/Admin/AdminRoutes";
+import CompanyRolesPage from "./pages/CompanyRoles/CompanyRolesPage";
+import { canManageCompanyRoles } from "./auth/rolePermissions";
 
 export default function App() {
   const queryClient = useQueryClient();
@@ -107,7 +109,10 @@ export default function App() {
               <AdminRoutes session={session} onLogout={handleLogout} />
             ) : (
               <AppShell session={session} onLogout={handleLogout}>
-                <ProductRoutes onProfileUpdated={handleProfileUpdated} />
+                <ProductRoutes
+                  session={session}
+                  onProfileUpdated={handleProfileUpdated}
+                />
               </AppShell>
             )
           ) : (
@@ -120,8 +125,10 @@ export default function App() {
 }
 
 function ProductRoutes({
+  session,
   onProfileUpdated,
 }: {
+  session: AuthSession;
   onProfileUpdated: (role: string) => void;
 }) {
   return (
@@ -140,6 +147,16 @@ function ProductRoutes({
         <Route path="/pending-requests" element={<PendingRequestsPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/profile" element={<ProfilePage onProfileUpdated={onProfileUpdated} />} />
+        <Route
+          path="/company-roles"
+          element={
+            canManageCompanyRoles(session.role) ? (
+              <CompanyRolesPage />
+            ) : (
+              <Navigate to="/dashboard" replace />
+            )
+          }
+        />
         <Route path="/admin/users" element={<Navigate to="/dashboard" replace />} />
         <Route path="/impact" element={<ImpactPage />} />
         <Route path="/impact/:assessmentId" element={<ImpactDetailPage />} />

@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   getGoal,
   getGoalStatusHistory,
-  getGoalAssessment,
   getGoalEvidence,
   getGoalMilestones,
   getDocumentExpectations,
@@ -36,6 +35,7 @@ import type {
   SourceConnection,
 } from "../../types/api";
 import GoalMilestones from "../../components/Milestones/GoalMilestones";
+import GoalCriteriaAssessment from "../../components/Goals/GoalCriteriaAssessment";
 import "./GoalDetail.css";
 
 function formatDate(value: string | null | undefined) {
@@ -110,6 +110,12 @@ export default function GoalDetailPage() {
     new Set(),
   );
   const [discoverySaveError, setDiscoverySaveError] = useState("");
+  useEffect(() => {
+    if (searchParams.get("evidence") === "manual") {
+      setShowEvidenceForm(true);
+      setEvidenceEntryMode("manual");
+    }
+  }, [searchParams]);
   const goal = useQuery({
     queryKey: ["goal", goalId],
     queryFn: () => getGoal(goalId!),
@@ -213,12 +219,6 @@ export default function GoalDetailPage() {
       );
     }
   }
-
-  const assessment = useQuery({
-    queryKey: ["goal-assessment", goalId],
-    queryFn: () => getGoalAssessment(goalId!),
-    enabled: Boolean(goalId),
-  });
 
   const evidence = useQuery({
     queryKey: ["goal-evidence", goalId],
@@ -393,15 +393,11 @@ export default function GoalDetailPage() {
   }
 
   const goalData = goal.data;
-  const assessmentData = assessment.data;
   const evidenceItems = evidence.data ?? [];
   const impactItems = impact.data ?? [];
   const impactByEvidence = new Map<string, ImpactAssessment>();
   impactItems.forEach((item) => impactByEvidence.set(item.evidence_id, item));
 
-  const assessmentStatus = assessmentData?.status ?? "not_started";
-  const displayPercent = assessmentData?.progress_percentage ?? 0;
-  const visualPercent = Math.min(100, displayPercent);
   const sourceConnected = (provider: SourceConnection["provider"]) =>
       sourceConnections.data?.some(
         (connection) => connection.provider === provider && connection.connected,
@@ -655,54 +651,7 @@ export default function GoalDetailPage() {
         ) : null}
       </section>
 
-      <section className={`goal-detail-card goal-assessment-card goal-assessment-${assessmentStatus}`}>
-        <div className="goal-assessment-main">
-          <div className="card-eyebrow">EVIDENCE ASSESSMENT</div>
-          <div className="goal-assessment-title-row">
-            <h2>
-              {assessmentStatus === "above"
-                ? "Above Expectations"
-                : assessmentStatus === "met"
-                  ? "Met Expectations"
-                  : assessmentStatus === "in_progress"
-                    ? "In-progress"
-                    : "Not Started"}
-            </h2>
-          </div>
-          <p className="goal-assessment-description">
-            {goalData.status === "completed"
-              ? `The goal lifecycle is Completed. This evidence assessment remains ${formatSubStatus(assessmentStatus).toLowerCase()} and reflects evidence against the expected minimum; completing the goal does not change the assessment score.`
-              : assessmentData
-                ? "Evidence connected to this goal is assessed for its relevance and demonstrated impact."
-                : "Assessing evidence connected to this goal…"}
-          </p>
-        </div>
-
-        <div className="goal-stat-grid">
-          <div className="goal-stat">
-            <strong>{evidenceItems.length}</strong>
-            <span>evidence items</span>
-          </div>
-          <div className="goal-stat">
-            <strong>{impactItems.length}</strong>
-            <span>with demonstrated impact</span>
-          </div>
-          <div className="goal-stat">
-            <strong>{displayPercent}%</strong>
-            <span>evidence progress</span>
-          </div>
-        </div>
-
-        <div className="goal-progress" aria-label={`${displayPercent}% evidence progress`}>
-          <div className="goal-progress-fill" style={{ width: `${visualPercent}%` }} />
-        </div>
-
-        <div className="goal-meta">
-          {goalData.source && <span>Source: {goalData.source}</span>}
-          {goalData.start_date && <span>Started: {formatDate(goalData.start_date)}</span>}
-          {goalData.end_date && <span>Target: {formatDate(goalData.end_date)}</span>}
-        </div>
-      </section>
+      <GoalCriteriaAssessment goalId={goalData.id} />
 
       <GoalMilestones goalId={goalData.id} />
 
