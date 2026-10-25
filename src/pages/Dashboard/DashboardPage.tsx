@@ -146,16 +146,17 @@ export default function DashboardPage() {
   const avgImpact = allAssessments.length
     ? allAssessments.reduce((sum, item) => sum + item.impact_score, 0) / allAssessments.length
     : 0;
-  const goalProgress = activeGoals.length
-    ? Math.round(
-        goalAssessments.reduce(
-          (sum, assessment) => sum + Math.min(100, assessment.progress_percentage),
-          0,
-        ) / activeGoals.length,
-      )
-    : 0;
-  const goalsMeetingExpectations = goalAssessments.filter(
-    (assessment) => assessment.status === "met" || assessment.status === "above",
+  const assessedGoals = goalAssessments.filter(
+    (assessment) => assessment.criteria_count > 0 && assessment.assessed_criteria_count > 0,
+  ).length;
+  const goalsNeedingReview = goalAssessments.filter((assessment) =>
+    assessment.assessed_criteria_count < assessment.criteria_count
+    || assessment.criteria.some(
+      (criterion) =>
+        criterion.result === "NEEDS_REVIEW"
+        || criterion.lifecycle_state === "STALE"
+        || criterion.lifecycle_state === "OBSOLETE",
+    ),
   ).length;
 
   const isLoading = goalsQuery.isLoading || evidenceQueries.some((query) => query.isLoading) || goalAssessmentQueries.some((query) => query.isLoading) || impactQueries.some((query) => query.isLoading);
@@ -207,7 +208,7 @@ export default function DashboardPage() {
           <section className="progress-section">
             <div className="section-heading"><div><div className="card-eyebrow">YOUR OVERALL PROGRESS</div><h2>How are you doing?</h2></div><p>Open any area to see the details behind the status.</p></div>
             <div className="progress-grid">
-              <ProgressCard to="/goals" icon="🎯" title="Goals" status={`${goalProgress}%`} description="Average qualifying-achievement progress against each active goal’s expected minimum." meta={`${goalsMeetingExpectations}/${activeGoals.length} active goals met expectations`} />
+              <ProgressCard to="/goals" icon="🎯" title="Goals" status={`${assessedGoals}/${activeGoals.length}`} description="Active goals with at least one current criterion assessment." meta={`${goalsNeedingReview} goal${goalsNeedingReview === 1 ? "" : "s"} need review · progress details are in Goals`} />
               <ProgressCard to="/impact" icon="🚀" title="Impact" status={progressStatus(avgImpact)} description="How much difference is my work making?" meta={`${allAssessments.length} impact result${allAssessments.length === 1 ? "" : "s"} · ${new Set(allAssessments.map((a) => a.impact_type)).size} areas`} />
             </div>
           </section>

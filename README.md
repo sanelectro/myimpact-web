@@ -48,8 +48,9 @@ VITE_API_BASE_URL=http://127.0.0.1:8000
 
 ### Local demo accounts
 
-The local seed creates nine employee accounts and one MyImpact platform-admin
-account with real password hashes. Use the email for the selected account and the shared password provided as
+The local seed creates nine employee accounts, one second-company manager
+account, and one MyImpact platform-admin account with real password hashes. Use
+the email for the selected account and the shared password provided as
 `DEMO_USER_PASSWORD` when running `myimpact-db/scripts/demo/seed_demo_data.sh`.
 
 | Account | Email | Role |
@@ -64,6 +65,12 @@ account with real password hashes. Use the email for the selected account and th
 | JL5 | `user-lsa@example.com` | Lead Software Architect |
 | JL5 | `user-sem@example.com` | Senior Engineering Manager |
 | JL6 | `user-ed@example.com` | Engineering Director (Technical Director level) |
+| Company role catalogue | `northstar-manager@myimpact.local` | Engineering Manager (Northstar Product Labs) |
+
+The role catalogue demo seed populates both the MyImpact demo company and
+Northstar Product Labs with the seven documented role profiles. Their role
+summaries identify the owning company so managers can confirm that each
+company sees only its own catalogue.
 
 For local mock GitHub/Jira discovery, set `SOURCE_DEMO_MOCKS_ENABLED=true` in
 `myimpact-ai/.env` and restart the AI service. This is development-only; when

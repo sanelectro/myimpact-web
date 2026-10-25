@@ -44,6 +44,64 @@ export interface UserProfile {
   direct_report_role_options: ProfileRole[];
 }
 
+export interface CompanyRoleResponsibility {
+  id: string;
+  statement: string;
+  position: number;
+}
+
+export interface CompanyRoleGoal {
+  id: string;
+  title: string;
+  description: string | null;
+  position: number;
+}
+
+export interface CompanyRoleCompetency {
+  id: string;
+  name: string;
+  expected_level: string | null;
+  description: string | null;
+  position: number;
+}
+
+export interface CompanyRoleDefinition {
+  id: string;
+  name: string;
+  summary: string | null;
+  responsibilities: CompanyRoleResponsibility[];
+  goals: CompanyRoleGoal[];
+  competencies: CompanyRoleCompetency[];
+  created_by_user_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CompanyRoleWriteRequest {
+  name: string;
+  summary: string | null;
+  responsibilities: Array<{ statement: string }>;
+  goals: Array<{ title: string; description: string | null }>;
+  competencies: Array<{
+    name: string;
+    expected_level: string | null;
+    description: string | null;
+  }>;
+}
+
+export interface CompanyRoleHistoryEvent {
+  id: string;
+  role_id: string;
+  role_name: string;
+  action: "CREATED" | "UPDATED" | "DELETED";
+  actor_user_id: string | null;
+  actor_name: string;
+  actor_role: string;
+  before_snapshot: CompanyRoleDefinition | null;
+  after_snapshot: CompanyRoleDefinition | null;
+  created_at: string;
+}
+
 export interface AdminUser {
   id: string;
   name: string;
@@ -119,6 +177,7 @@ export interface GoalStatusHistory {
 }
 
 export type GoalMilestoneStatus = "not_started" | "in_progress" | "completed" | "blocked";
+export type GoalMilestoneSource = "ai" | "manual";
 
 export interface GoalMilestone {
   id: string;
@@ -127,6 +186,7 @@ export interface GoalMilestone {
   description: string | null;
   completion_criteria: string | null;
   status: GoalMilestoneStatus;
+  source: GoalMilestoneSource;
   due_date: string | null;
   archived_at?: string | null;
   created_at: string;
@@ -140,9 +200,16 @@ export interface GoalMilestoneCreateRequest {
   completion_criteria: string | null;
   status: GoalMilestoneStatus;
   due_date: string | null;
+  source?: GoalMilestoneSource;
 }
 
-export type GoalMilestoneUpdateRequest = Partial<Omit<GoalMilestoneCreateRequest, "goalId">>;
+export type GoalMilestoneUpdateRequest = Partial<Omit<GoalMilestoneCreateRequest, "goalId" | "source">>;
+
+export interface GoalMilestoneSuggestion {
+  title: string;
+  description: string;
+  completion_criteria: string;
+}
 
 
 export interface GoalCreateRequest {
@@ -156,18 +223,168 @@ export interface GoalCreateRequest {
 
 export type GoalUpdateRequest = Partial<GoalCreateRequest>;
 
-export type GoalExpectationStatus = "not_started" | "in_progress" | "met" | "above";
+export type GoalCriterionType = "BINARY" | "MILESTONE_BASED" | "MEASURABLE_TARGET";
+export type GoalCriterionApprovalStatus = "PROPOSED" | "APPROVED";
+export type GoalCriterionResult =
+  | "NOT_ASSESSED"
+  | "NOT_STARTED"
+  | "IN_PROGRESS"
+  | "MET"
+  | "NEEDS_REVIEW";
+export type GoalAssessmentLifecycle = "CURRENT" | "STALE" | "OBSOLETE";
+export type GoalAssessmentRunStatus =
+  | "PENDING"
+  | "RUNNING"
+  | "COMPLETED"
+  | "PARTIAL"
+  | "FAILED";
+export type GoalAssessmentFeedbackType = "CONFIRMED" | "CORRECTED" | "CHALLENGED";
+
+export interface GoalCriterionMilestone {
+  id: string;
+  title: string;
+  completion_conditions: string;
+}
+
+export interface GoalCriterionDefinition {
+  criterion_type: GoalCriterionType;
+  description: string;
+  completion_conditions: string | null;
+  milestones: GoalCriterionMilestone[];
+  target_value: number | null;
+  unit: string | null;
+  evidence_suggestions: string[];
+  assumptions_and_clarifications: string[];
+}
+
+export interface GoalCriterionVersion {
+  id: string;
+  criterion_id: string;
+  version: number;
+  definition: GoalCriterionDefinition;
+  approval_status: GoalCriterionApprovalStatus;
+  created_by_user_id: string;
+  prompt_version: string | null;
+  model_version: string | null;
+  created_at: string;
+  approved_by_user_id: string | null;
+  approved_at: string | null;
+}
+
+export interface GoalCriterion {
+  id: string;
+  goal_id: string;
+  current_version: number | null;
+  is_retired: boolean;
+  created_at: string;
+  updated_at: string;
+  versions: GoalCriterionVersion[];
+}
+
+export interface GoalCriterionEvidence {
+  id: string;
+  evidence_mapping_id: string;
+  evidence_id: string;
+  title: string;
+  source_url: string | null;
+  captured_at: string;
+  source_updated_at: string | null;
+  review_state: string | null;
+  source_validity: string;
+  relationship_type: string;
+  citation_excerpt: string | null;
+}
+
+export interface GoalCriterionAssessmentEvent {
+  id: string;
+  event_type: string;
+  lifecycle_state: GoalAssessmentLifecycle | null;
+  actor_user_id: string | null;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface GoalCriterionAssessment {
+  id: string;
+  run_id: string;
+  criterion_id: string;
+  criterion_version_id: string;
+  criterion_version: number;
+  result: GoalCriterionResult;
+  lifecycle_state: GoalAssessmentLifecycle;
+  progress_percentage: number | null;
+  rationale: string;
+  confidence: number;
+  input_fingerprint: string;
+  model_version: string | null;
+  prompt_version: string;
+  created_at: string;
+  evidence: GoalCriterionEvidence[];
+  events: GoalCriterionAssessmentEvent[];
+}
+
+export interface GoalCriterionSummary {
+  criterion_id: string;
+  criterion_version: number | null;
+  result: GoalCriterionResult;
+  lifecycle_state: GoalAssessmentLifecycle | null;
+  progress_percentage: number | null;
+  assessment: GoalCriterionAssessment | null;
+}
 
 export interface GoalAssessment {
   goal_id: string;
-  expected_achievement_count: number;
-  achievement_count: number;
-  evidence_count: number;
-  demonstrated_impact_count: number;
-  qualifying_achievement_count: number;
-  progress_percentage: number;
-  status: GoalExpectationStatus;
-  description: string;
+  run_id: string | null;
+  run_status: GoalAssessmentRunStatus | null;
+  run_error_message: string | null;
+  criteria_count: number;
+  assessed_criteria_count: number;
+  criteria_met_count: number;
+  criteria_met_percentage: number | null;
+  goal_progress_percentage: number | null;
+  evidence_coverage_percentage: number | null;
+  average_confidence: number | null;
+  criteria: GoalCriterionSummary[];
+  source_retrieval_history: GoalSourceRetrieval[];
+  updated_at: string | null;
+}
+
+export interface GoalSourceRetrieval {
+  id: string;
+  goal_id: string;
+  run_id: string;
+  provider: "github" | "jira";
+  status: "SUCCESS" | "FAILURE";
+  checked_at: string;
+  failure_reason: string | null;
+  used_snapshot: boolean;
+  snapshot_captured_at: string | null;
+}
+
+export interface GoalAssessmentRun {
+  id: string;
+  batch_id: string | null;
+  goal_id: string;
+  status: GoalAssessmentRunStatus;
+  trigger: string;
+  started_at: string | null;
+  finished_at: string | null;
+  error_message: string | null;
+}
+
+export interface GoalAssessmentBatch {
+  batch_id: string;
+  runs: GoalAssessmentRun[];
+}
+
+export interface GoalAssessmentFeedbackRequest {
+  feedback_type: GoalAssessmentFeedbackType;
+  corrected_result?: GoalCriterionResult | null;
+  comment?: string | null;
+}
+
+export interface GoalCriterionRequest {
+  definition: GoalCriterionDefinition;
 }
 
 export interface GoalEvidence {
@@ -408,6 +625,7 @@ export interface ArchivedMilestone {
   description: string | null;
   completion_criteria: string | null;
   status: GoalMilestoneStatus;
+  source: GoalMilestoneSource;
   due_date: string | null;
   archived_at: string;
 }

@@ -1,0 +1,249 @@
+.m66-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.m66-heading,
+.m66-criterion-header,
+.m66-assessment-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.m66-heading h2,
+.m66-criterion h3 {
+  margin: 0.25rem 0;
+}
+
+.m66-actions,
+.m66-criterion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.m66-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.m66-metrics > div,
+.m66-criterion,
+.m66-editor {
+  border: 1px solid var(--border-color, #d9dee7);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.m66-metrics > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.m66-metrics strong {
+  font-size: 1.25rem;
+}
+
+.m66-metrics span,
+.m66-type,
+.m66-run-status,
+.m66-unassessed {
+  color: var(--text-muted, #596579);
+}
+
+.m66-criteria-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.m66-criterion {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.m66-criterion-header {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color, #d9dee7);
+}
+
+.m66-version-history {
+  color: var(--text-muted, #596579);
+  font-size: 0.9rem;
+}
+
+.m66-version-history ol {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.m66-version-history p {
+  margin: 0.25rem 0;
+}
+
+.m66-criterion-header p,
+.m66-assessment p {
+  margin: 0.5rem 0 0;
+}
+
+.m66-type {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.m66-badge {
+  border-radius: 1rem;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.m66-badge.proposed {
+  background: #fff1d6;
+  color: #744d00;
+}
+
+.m66-badge.approved {
+  background: #e3f5eb;
+  color: #145c35;
+}
+
+.m66-editor {
+  display: grid;
+  gap: 0.75rem;
+  background: var(--surface-subtle, #f8fafc);
+}
+
+.m66-editor label,
+.m66-target-fields label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.m66-editor input,
+.m66-editor select,
+.m66-editor textarea,
+.m66-actions select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.55rem;
+}
+
+.m66-target-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.m66-assessment {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.m66-assessment-heading {
+  flex-wrap: wrap;
+}
+
+.m66-assessment-heading span {
+  font-size: 0.9rem;
+}
+
+.m66-evidence {
+  border-left: 3px solid var(--accent-color, #456bd8);
+  padding: 0.25rem 0 0.25rem 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.m66-evidence span {
+  display: block;
+  color: var(--text-muted, #596579);
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.m66-evidence blockquote {
+  margin: 0.5rem 0 0;
+  color: var(--text-muted, #596579);
+}
+
+.m66-error {
+  color: #a12622;
+}
+
+.m66-source-history {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.m66-source-history h3,
+.m66-source-history p {
+  margin: 0;
+}
+
+.m66-source-history > div > p,
+.m66-source-history-empty {
+  margin-top: 0.25rem;
+  color: var(--text-muted, #596579);
+  font-size: 0.9rem;
+}
+
+.m66-source-history-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.m66-source-retrieval {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color, #d9dee7);
+  border-left-width: 3px;
+  border-radius: 0.5rem;
+  overflow-wrap: anywhere;
+}
+
+.m66-source-retrieval.success {
+  border-left-color: #12b76a;
+}
+
+.m66-source-retrieval.failure {
+  border-left-color: #d92d20;
+}
+
+.m66-source-retrieval-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.m66-source-retrieval-heading time,
+.m66-source-retrieval > p {
+  color: var(--text-muted, #596579);
+  font-size: 0.9rem;
+}
+
+.m66-source-retrieval .m66-source-snapshot-note {
+  color: #744d00;
+}
+
+.m66-warning {
+  color: #744d00;
+}
+
+@media (max-width: 700px) {
+  .m66-heading,
+  .m66-criterion-header,
+  .m66-source-retrieval-heading {
+    display: grid;
+  }
+}

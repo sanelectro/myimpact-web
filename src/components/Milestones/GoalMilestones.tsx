@@ -3,10 +3,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   archiveMilestone,
   createGoalMilestone,
+  getGoalMilestoneSuggestions,
   getGoalMilestones,
   updateGoalMilestone,
 } from "../../api/myImpact";
-import type { GoalMilestone, GoalMilestoneStatus } from "../../types/api";
+import type {
+  GoalMilestone,
+  GoalMilestoneCreateRequest,
+  GoalMilestoneStatus,
+  GoalMilestoneSuggestion,
+} from "../../types/api";
 import "./Milestones.css";
 
 const statusLabels: Record<GoalMilestoneStatus, string> = {
@@ -38,6 +44,12 @@ export default function GoalMilestones({ goalId }: { goalId: string }) {
   const milestones = useQuery({
     queryKey: ["goal-milestones", goalId],
     queryFn: () => getGoalMilestones(goalId),
+  });
+  const suggestions = useQuery({
+    queryKey: ["goal-milestone-suggestions", goalId],
+    queryFn: () => getGoalMilestoneSuggestions(goalId),
+    enabled: milestones.isSuccess && milestones.data.length === 0,
+    staleTime: 30 * 60 * 1000,
   });
 
   async function refreshMilestones() {
@@ -95,12 +107,13 @@ export default function GoalMilestones({ goalId }: { goalId: string }) {
 
   function submitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const values = {
+    const values: Omit<GoalMilestoneCreateRequest, "goalId"> = {
       title: title.trim(),
       description: description.trim() || null,
       completion_criteria: completionCriteria.trim() || null,
       due_date: dueDate || null,
       status,
+      source: "manual",
     };
     if (editingId) {
       updateMutation.mutate({ milestoneId: editingId, values });
@@ -111,6 +124,16 @@ export default function GoalMilestones({ goalId }: { goalId: string }) {
 
   function changeStatus(milestoneId: string, nextStatus: GoalMilestoneStatus) {
     updateMutation.mutate({ milestoneId, values: { status: nextStatus } });
+  }
+
+  function addSuggestion(suggestion: GoalMilestoneSuggestion) {
+    createMutation.mutate({
+      goalId,
+      ...suggestion,
+      status: "not_started",
+      due_date: null,
+      source: "ai",
+    });
   }
 
   const isSaving = createMutation.isPending || updateMutation.isPending || archiveMutation.isPending;
@@ -144,6 +167,51 @@ export default function GoalMilestones({ goalId }: { goalId: string }) {
         <p className="milestone-error" role="alert">
           Could not load milestones: {milestones.error.message}
         </p>
+      )}
+
+      {milestones.data?.length === 0 && suggestions.isLoading && (
+        <p className="milestone-message" role="status">Preparing AI milestone suggestions…</p>
+      )}
+      {suggestions.isError && milestones.data?.length === 0 && (
+        <div className="milestone-suggestions-error" role="alert">
+          <p>Could not generate milestone suggestions: {suggestions.error.message}</p>
+          <button
+            className="goal-edit-button"
+            type="button"
+            onClick={() => void suggestions.refetch()}
+          >
+            Try suggestions again
+          </button>
+        </div>
+      )}
+      {!!suggestions.data?.length && (
+        <div className="milestone-suggestions">
+          <div>
+            <h3>AI milestone suggestions</h3>
+            <p>Review these suggested steps and add the ones that fit your goal.</p>
+          </div>
+          {suggestions.data.map((suggestion) => (
+            <article className="milestone-suggestion-card" key={suggestion.title}>
+              <div>
+                <strong>{suggestion.title}</strong>
+                <p>{suggestion.description}</p>
+                <p><strong>Completion criteria:</strong> {suggestion.completion_criteria}</p>
+              </div>
+              <button
+                className="goal-edit-button"
+                type="button"
+                disabled={isSaving}
+                onClick={() => addSuggestion(suggestion)}
+              >
+                Add milestone
+              </button>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {mutationError && !showForm && !editingId && (
+        <p className="milestone-error" role="alert">{mutationError.message}</p>
       )}
 
       {(showForm || editingId) && (
@@ -246,6 +314,9 @@ export default function GoalMilestones({ goalId }: { goalId: string }) {
                       <h3>{milestone.title}</h3>
                       <span className={`milestone-status milestone-status-${milestone.status}`}>
                         {statusLabels[milestone.status]}
+                      </span>
+                      <span className="milestone-source">
+                        {milestone.source === "ai" ? "AI suggested" : "Manually added"}
                       </span>
                     </div>
                     {milestone.description && <p>{milestone.description}</p>}

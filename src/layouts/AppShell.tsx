@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { getProfile } from "../api/myImpact";
 import type { AuthSession } from "../auth/auth";
+import { canManageCompanyRoles } from "../auth/rolePermissions";
 import "./AppShell.css";
 
 interface AppShellProps {
@@ -35,6 +36,12 @@ export default function AppShell({ children, session, onLogout }: AppShellProps)
   const managerNavigation = isManager
     ? [{ to: "/pending-requests", label: "Pending requests" }]
     : [];
+  if (canManageCompanyRoles(session.role)) {
+    managerNavigation.push({
+      to: "/company-roles",
+      label: "Company roles",
+    });
+  }
 
   return (
     <div className="app-shell">
