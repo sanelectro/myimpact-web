@@ -4,6 +4,9 @@ import AdminShell from "../../layouts/AdminShell";
 import AdminCompaniesPage from "./AdminCompaniesPage";
 import AdminUsersPage from "./AdminUsersPage";
 import PlatformAdminDashboardPage from "./PlatformAdminDashboardPage";
+import AdminHumanReviewPage from "./AdminHumanReviewPage";
+import AdminReliabilityPage from "./AdminReliabilityPage";
+import AdminThresholdGovernancePage from "./AdminThresholdGovernancePage";
 
 interface AdminRoutesProps {
   session: AuthSession;
@@ -18,6 +21,9 @@ export default function AdminRoutes({ session, onLogout }: AdminRoutesProps) {
         <Route path="/dashboard" element={<PlatformAdminDashboardPage />} />
         <Route path="/admin/users" element={<AdminUsersPage />} />
         <Route path="/admin/companies" element={<AdminCompaniesPage />} />
+        <Route path="/admin/human-review" element={<AdminHumanReviewPage />} />
+        <Route path="/admin/reliability" element={<AdminReliabilityPage />} />
+        <Route path="/admin/thresholds" element={<AdminThresholdGovernancePage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </AdminShell>

@@ -26,6 +26,8 @@ import PendingRequestsPage from "./pages/Approvals/PendingRequestsPage";
 import NotificationsPage from "./pages/Notifications/NotificationsPage";
 import AdminRoutes from "./pages/Admin/AdminRoutes";
 import CompanyRolesPage from "./pages/CompanyRoles/CompanyRolesPage";
+import HumanReviewPage from "./pages/HumanReview/HumanReviewPage";
+import ReviewerRoutes from "./pages/Reviewer/ReviewerRoutes";
 import { canManageCompanyRoles } from "./auth/rolePermissions";
 
 export default function App() {
@@ -95,7 +97,7 @@ export default function App() {
         path="/login"
         element={
           session ? (
-            <Navigate to="/dashboard" replace />
+            <Navigate to={session.isReviewer ? "/evaluate" : "/dashboard"} replace />
           ) : (
             <LoginPage onLogin={handleLogin} notice={authNotice} />
           )
@@ -105,7 +107,9 @@ export default function App() {
         path="*"
         element={
           session ? (
-            session.isPlatformAdmin ? (
+            session.isReviewer ? (
+              <ReviewerRoutes session={session} onLogout={handleLogout} />
+            ) : session.isPlatformAdmin ? (
               <AdminRoutes session={session} onLogout={handleLogout} />
             ) : (
               <AppShell session={session} onLogout={handleLogout}>
@@ -145,6 +149,7 @@ function ProductRoutes({
         <Route path="/milestones" element={<MilestonesPage />} />
         <Route path="/archives" element={<ArchivesPage />} />
         <Route path="/pending-requests" element={<PendingRequestsPage />} />
+        <Route path="/human-review" element={<HumanReviewPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/profile" element={<ProfilePage onProfileUpdated={onProfileUpdated} />} />
         <Route

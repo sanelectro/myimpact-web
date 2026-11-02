@@ -359,6 +359,14 @@ export interface GoalSourceRetrieval {
   failure_reason: string | null;
   used_snapshot: boolean;
   snapshot_captured_at: string | null;
+  outcome: "COMPLETE" | "PARTIAL" | "NO_RESULTS" | "INACCESSIBLE" | "FAILED";
+  error_category: string | null;
+  attempted_at: string | null;
+  last_verified_at: string | null;
+  last_retrieved_at: string | null;
+  retry_count: number;
+  bounds: Record<string, unknown> | null;
+  coverage: Record<string, unknown> | null;
 }
 
 export interface GoalAssessmentRun {
@@ -465,6 +473,172 @@ export interface NotificationHistoryEntry {
   actor_user_id: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
+}
+
+export interface HumanReviewBatch {
+  id: string;
+  dataset_id: string;
+  dataset_version: string;
+  status: string;
+  expected_case_count: number;
+  review_mode: "SINGLE_REVIEWER" | "DUAL_ADJUDICATED";
+}
+
+export interface HumanReviewCaseSummary {
+  case_id: string;
+  category: string | null;
+  status: string;
+  submitted_by_current_user: boolean;
+}
+
+export interface HumanReviewSubmission {
+  id: string;
+  case_id: string;
+  reviewer_user_id: string;
+  label: string;
+  rationale: string;
+  submitted_at: string;
+}
+
+export interface HumanReviewCase {
+  case: Record<string, unknown>;
+  status: string;
+  own_review: HumanReviewSubmission | null;
+  reviews: HumanReviewSubmission[];
+  ai_assessment: HumanReviewAIAssessment | null;
+}
+
+export interface HumanReviewAIAssessment {
+  attempt_id: string;
+  model_identifier: string;
+  assessment_label: string;
+  rationale: string | null;
+  confidence: number | null;
+  supporting_mapping_ids: string[];
+  contradictory_mapping_ids: string[];
+  limitations: string[];
+  abstained: boolean;
+  structured_status: string;
+}
+
+export interface HumanReviewAdjudicationCase {
+  case: Record<string, unknown> | null;
+  status: string;
+  reviews: HumanReviewSubmission[];
+}
+
+export interface HumanReviewProgress {
+  batch: HumanReviewBatch;
+  total_cases: number;
+  awaiting_first_review: number;
+  awaiting_second_review: number;
+  reviewed: number;
+  agreed: number;
+  disagreement: number;
+  adjudicated: number;
+}
+
+export interface ReliabilityExperiment {
+  id: string;
+  name: string;
+  dataset_id: string;
+  dataset_version: string;
+  case_selection: string[];
+  repetitions_per_case: number;
+  status: string;
+  planned_attempts: number;
+  completed_attempts: number;
+  failed_attempts: number;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+export interface ReliabilityAttempt {
+  id: string;
+  case_id: string;
+  sequence: number;
+  status: string;
+  schema_valid: boolean;
+  raw_output: Record<string, unknown> | null;
+  normalized_output: Record<string, unknown> | null;
+  error_category: string | null;
+  error_detail: string | null;
+}
+
+export interface ReliabilityComparison {
+  id: string;
+  case_id: string;
+  status: string;
+  metrics: Record<string, Record<string, unknown>>;
+  exact_output_consistent: boolean | null;
+  difference_categories: string[];
+  differences: Array<Record<string, unknown>>;
+  exclusion_reasons: string[];
+}
+
+export interface ReliabilityReport {
+  id: string;
+  report_version: string;
+  threshold_result: "PASS" | "FAIL" | "NOT_EVALUABLE";
+  metrics: Record<string, Record<string, unknown>>;
+  coverage: Record<string, number>;
+  divergent_case_ids: string[];
+  limitations: string[];
+  generated_at: string;
+}
+
+export interface ThresholdMetricDefinition {
+  metric_id: string;
+  definition_version: string;
+  name: string;
+  description: string;
+  unit: string;
+  direction: string;
+  numerator_definition: string;
+  denominator_definition: string;
+  zero_denominator_behavior: string;
+  inclusion_rules: string;
+  exclusion_rules: string;
+  required_inputs: string[];
+  limitations: string;
+  calculation_version: string;
+}
+
+export interface ThresholdItem {
+  metric_id: string;
+  metric_definition_version: string;
+  operator: string;
+  threshold_value: number;
+  unit: string;
+  rationale: string;
+  required: boolean;
+}
+
+export interface ThresholdApproval {
+  decision: "APPROVED" | "REJECTED";
+  approver_user_id: string;
+  decided_at: string;
+  rationale: string;
+  policy_reference: string | null;
+}
+
+export interface ThresholdSet {
+  id: string;
+  version: number;
+  name: string;
+  status: "DRAFT" | "PROPOSED" | "APPROVED" | "REJECTED" | "SUPERSEDED" | "REVOKED";
+  dataset_id: string;
+  dataset_version: string;
+  prompt_version: string;
+  model_identifier: string;
+  model_configuration: Record<string, unknown>;
+  evaluation_code_version: string;
+  created_by_user_id: string;
+  created_at: string;
+  proposal_rationale: string;
+  items: ThresholdItem[];
+  approvals: ThresholdApproval[];
 }
 
 export type EvidenceSourceType =

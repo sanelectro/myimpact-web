@@ -4,6 +4,7 @@ export interface AuthSession {
   displayName: string;
   role: string;
   isPlatformAdmin: boolean;
+  isReviewer: boolean;
   careerLevel: number;
   accessToken: string;
 }
@@ -24,6 +25,7 @@ interface AuthPayload {
     email: string;
     role: string | null;
     is_platform_admin?: boolean;
+    is_reviewer?: boolean;
   };
 }
 
@@ -60,6 +62,7 @@ function toSession(payload: AuthPayload): AuthSession {
     displayName: payload.user.name,
     role,
     isPlatformAdmin: payload.user.is_platform_admin === true,
+    isReviewer: payload.user.is_reviewer === true,
     careerLevel,
     accessToken: payload.access_token,
   };

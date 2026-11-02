@@ -46,6 +46,19 @@ import type {
   CompanyRoleWriteRequest,
   PendingEvidenceApproval,
   Notification,
+  HumanReviewBatch,
+  HumanReviewCase,
+  HumanReviewCaseSummary,
+  HumanReviewSubmission,
+  HumanReviewAdjudicationCase,
+  HumanReviewProgress,
+  ReliabilityExperiment,
+  ReliabilityAttempt,
+  ReliabilityComparison,
+  ReliabilityReport,
+  ThresholdMetricDefinition,
+  ThresholdSet,
+  ThresholdApproval,
 } from "../types/api";
 
 function userQuery(userId?: string) {
@@ -155,6 +168,185 @@ export function resubmitEvidence(
 
 export function getNotifications() {
   return apiRequest<Notification[]>("/api/v1/notifications");
+}
+
+export function getHumanReviewBatches() {
+  return apiRequest<HumanReviewBatch[]>("/api/v1/human-review/batches");
+}
+
+export function getHumanReviewQueue(batchId: string) {
+  return apiRequest<HumanReviewCaseSummary[]>(
+    `/api/v1/human-review/batches/${encodeURIComponent(batchId)}/queue`,
+  );
+}
+
+export function getHumanReviewCase(batchId: string, caseId: string) {
+  return apiRequest<HumanReviewCase>(
+    `/api/v1/human-review/batches/${encodeURIComponent(batchId)}/cases/${encodeURIComponent(caseId)}`,
+  );
+}
+
+export function submitHumanReview(
+  batchId: string,
+  caseId: string,
+  payload: { label: string; rationale: string },
+) {
+  return apiRequest<HumanReviewSubmission>(
+    `/api/v1/human-review/batches/${encodeURIComponent(batchId)}/cases/${encodeURIComponent(caseId)}/reviews`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function getHumanReviewAdjudications(batchId: string) {
+  return apiRequest<HumanReviewAdjudicationCase[]>(
+    `/api/v1/human-review/batches/${encodeURIComponent(batchId)}/adjudications`,
+  );
+}
+
+export function getHumanReviewProgress(batchId: string) {
+  return apiRequest<HumanReviewProgress>(
+    `/api/v1/human-review/batches/${encodeURIComponent(batchId)}/progress`,
+  );
+}
+
+export function submitHumanReviewAdjudication(
+  batchId: string,
+  caseId: string,
+  payload: { final_label: string; rationale: string },
+) {
+  return apiRequest<Record<string, unknown>>(
+    `/api/v1/human-review/batches/${encodeURIComponent(batchId)}/cases/${encodeURIComponent(caseId)}/adjudication`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function getReliabilityExperiments() {
+  return apiRequest<ReliabilityExperiment[]>("/api/v1/reliability/experiments");
+}
+
+export interface ReliabilityExperimentCreateRequest {
+  name: string;
+  dataset_id: string;
+  dataset_version: string;
+  case_selection?: string[];
+  prompt_version: string;
+  model_identifier: string;
+  model_configuration: Record<string, unknown>;
+  retrieval_configuration_version: string;
+  source_snapshot_id?: string | null;
+  evaluation_code_version: string;
+  output_schema_version: string;
+  normalization_version: string;
+  repetitions_per_case: number;
+}
+
+export function createReliabilityExperiment(
+  payload: ReliabilityExperimentCreateRequest,
+) {
+  return apiRequest<ReliabilityExperiment>("/api/v1/reliability/experiments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function validateReliabilityExperiment(experimentId: string) {
+  return apiRequest<{ valid: boolean; errors: string[] }>(
+    `/api/v1/reliability/experiments/${encodeURIComponent(experimentId)}/validate`,
+    { method: "POST" },
+  );
+}
+
+export function startReliabilityExperiment(experimentId: string) {
+  return apiRequest<ReliabilityExperiment>(
+    `/api/v1/reliability/experiments/${encodeURIComponent(experimentId)}/start`,
+    { method: "POST" },
+  );
+}
+
+export function getReliabilityAttempts(experimentId: string) {
+  return apiRequest<ReliabilityAttempt[]>(
+    `/api/v1/reliability/experiments/${encodeURIComponent(experimentId)}/attempts`,
+  );
+}
+
+export function getReliabilityComparisons(experimentId: string) {
+  return apiRequest<ReliabilityComparison[]>(
+    `/api/v1/reliability/experiments/${encodeURIComponent(experimentId)}/comparisons`,
+  );
+}
+
+export function getReliabilityReport(experimentId: string) {
+  return apiRequest<ReliabilityReport>(
+    `/api/v1/reliability/experiments/${encodeURIComponent(experimentId)}/report`,
+  );
+}
+
+export function getThresholdMetricDefinitions() {
+  return apiRequest<ThresholdMetricDefinition[]>(
+    "/api/v1/threshold-governance/metric-definitions",
+  );
+}
+
+export function getThresholdSets() {
+  return apiRequest<ThresholdSet[]>("/api/v1/threshold-governance/threshold-sets");
+}
+
+export interface ThresholdSetCreateRequest {
+  name: string;
+  dataset_id: string;
+  dataset_version: string;
+  prompt_version: string;
+  model_identifier: string;
+  model_configuration: Record<string, unknown>;
+  evaluation_code_version: string;
+  proposal_rationale: string;
+  items: Array<{
+    metric_id: string;
+    metric_definition_version: string;
+    operator: string;
+    threshold_value: number;
+    unit: string;
+    rationale: string;
+    required: boolean;
+  }>;
+}
+
+export function createThresholdSet(payload: ThresholdSetCreateRequest) {
+  return apiRequest<ThresholdSet>("/api/v1/threshold-governance/threshold-sets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function proposeThresholdSet(thresholdSetId: string) {
+  return apiRequest<ThresholdSet>(
+    `/api/v1/threshold-governance/threshold-sets/${encodeURIComponent(thresholdSetId)}/propose`,
+    { method: "POST" },
+  );
+}
+
+export function decideThresholdSet(
+  thresholdSetId: string,
+  payload: { decision: "APPROVED" | "REJECTED"; rationale: string; policy_reference?: string },
+) {
+  return apiRequest<ThresholdApproval>(
+    `/api/v1/threshold-governance/threshold-sets/${encodeURIComponent(thresholdSetId)}/decision`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 export function markNotificationRead(notificationId: string) {

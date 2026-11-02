@@ -287,7 +287,15 @@ export default function GoalCriteriaAssessment({ goalId }: { goalId: string }) {
                   <div className="m66-source-retrieval-heading">
                     <strong>
                       {item.provider === "github" ? "GitHub" : "Jira"} ·{" "}
-                      {item.status === "SUCCESS" ? "Success" : "Failure"}
+                      {item.outcome === "NO_RESULTS"
+                        ? "No results within scope"
+                        : item.outcome === "INACCESSIBLE"
+                          ? "Access unavailable"
+                          : item.outcome === "PARTIAL"
+                            ? "Partial"
+                            : item.status === "SUCCESS"
+                              ? "Complete"
+                              : "Failed"}
                     </strong>
                     <time dateTime={item.checked_at}>
                       {new Intl.DateTimeFormat("en-GB", {
@@ -297,6 +305,23 @@ export default function GoalCriteriaAssessment({ goalId }: { goalId: string }) {
                     </time>
                   </div>
                   {item.failure_reason && <p>{item.failure_reason}</p>}
+                  {item.bounds && (
+                    <p>
+                      Search window: {String(item.bounds.start_date ?? "configured range")}
+                      {" · "}limits are bounded and may not include every matching record.
+                    </p>
+                  )}
+                  {item.last_verified_at && (
+                    <p>
+                      Last successfully verified{" "}
+                      <time dateTime={item.last_verified_at}>
+                        {new Intl.DateTimeFormat("en-GB", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        }).format(new Date(item.last_verified_at))}
+                      </time>
+                    </p>
+                  )}
                   {item.used_snapshot && item.snapshot_captured_at && (
                     <p className="m66-source-snapshot-note">
                       Source couldn’t be checked; this assessment uses the snapshot captured on{" "}

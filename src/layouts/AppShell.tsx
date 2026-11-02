@@ -16,6 +16,7 @@ const navigation = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/goals", label: "Goals" },
   { to: "/archives", label: "Archives" },
+  { to: "/human-review", label: "Human review" },
   { to: "/notifications", label: "Notifications" },
   { to: "/impact", label: "Impact" },
   { to: "/career", label: "Career Journey" },

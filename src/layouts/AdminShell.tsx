@@ -14,6 +14,9 @@ const navigation = [
   { to: "/dashboard", label: "Platform overview" },
   { to: "/admin/users", label: "Customer accounts" },
   { to: "/admin/companies", label: "Company information" },
+  { to: "/admin/human-review", label: "Human review" },
+  { to: "/admin/reliability", label: "Evaluation reliability" },
+  { to: "/admin/thresholds", label: "Metric thresholds" },
 ];
 
 export default function AdminShell({

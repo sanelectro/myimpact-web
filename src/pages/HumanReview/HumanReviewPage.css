@@ -1,0 +1,173 @@
+.human-review-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.human-review-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1.75fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.human-review-queue,
+.human-review-detail {
+  padding: 1.5rem;
+}
+
+.human-review-version {
+  color: var(--muted-text, #687386);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.human-review-case-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.human-review-case {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--border-color, #d9dee7);
+  border-radius: 0.5rem;
+  background: transparent;
+  padding: 0.75rem;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.human-review-case.selected {
+  border-color: var(--accent-color, #456bd8);
+  background: var(--accent-soft, #eef2ff);
+}
+
+.human-review-case small {
+  color: var(--muted-text, #687386);
+}
+
+.human-review-context {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.human-review-context div {
+  border-top: 1px solid var(--border-color, #d9dee7);
+  padding-top: 0.75rem;
+}
+
+.human-review-context dt {
+  color: var(--muted-text, #687386);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.human-review-context dd {
+  margin: 0.35rem 0 0;
+}
+
+.human-review-context dd p {
+  margin: 0.4rem 0 0;
+  color: var(--muted-text, #687386);
+}
+
+.human-review-evidence {
+  margin: 1.5rem 0;
+}
+
+.human-review-evidence h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.human-review-evidence-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.human-review-evidence-item {
+  border: 1px solid var(--border-color, #d9dee7);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.human-review-evidence-item h4 {
+  margin: 0;
+}
+
+.human-review-evidence-item > p {
+  white-space: pre-wrap;
+}
+
+.human-review-evidence-item dl {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--muted-text, #687386);
+  font-size: 0.85rem;
+}
+
+.human-review-evidence-item dl div {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 0.5rem;
+}
+
+.human-review-evidence-item dt {
+  font-weight: 600;
+}
+
+.human-review-evidence-item dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.human-review-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.human-review-form label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.human-review-form select,
+.human-review-form textarea {
+  border: 1px solid var(--border-color, #d9dee7);
+  border-radius: 0.4rem;
+  padding: 0.7rem;
+  font: inherit;
+}
+
+.human-review-submitted {
+  border-left: 3px solid var(--accent-color, #456bd8);
+  padding-left: 0.75rem;
+}
+
+.human-review-ai-assessment {
+  margin-top: 1.5rem;
+  border: 1px solid var(--border-color, #d9dee7);
+  border-radius: 0.5rem;
+  background: var(--accent-soft, #eef2ff);
+  padding: 1rem;
+}
+
+.human-review-ai-assessment h3 {
+  margin: 0.35rem 0 0.75rem;
+}
+
+.human-review-ai-meta {
+  color: var(--muted-text, #687386);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 800px) {
+  .human-review-layout {
+    grid-template-columns: 1fr;
+  }
+}

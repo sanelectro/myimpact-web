@@ -9,6 +9,8 @@ import "./Login.css";
 
 const demoUsers = [
   { name: "MyImpact Admin", role: "Platform Administrator", email: "myimpact-admin@example.com" },
+  { name: "M6.6 Reviewer One", role: "Evaluation Reviewer", email: "reviewer-1@myimpact.example.com" },
+  { name: "M6.6 Reviewer Two", role: "Evaluation Reviewer", email: "reviewer-2@myimpact.example.com" },
   { name: "Aditi Rao", level: "JL1", role: "Trainee Software Engineer", email: "user-tse@example.com" },
   { name: "Omar Farouk", level: "JL2", role: "Junior Software Engineer", email: "user-jse@example.com" },
   { name: "Priya Sharma", level: "JL3", role: "Software Engineer", email: "user-se@example.com" },
