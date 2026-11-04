@@ -15,6 +15,11 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unknown error";
 }
 
+function formatDate(value: string | null | undefined) {
+  if (!value) return "Not yet";
+  return new Date(value).toLocaleString();
+}
+
 export default function AdminHumanReviewPage() {
   const queryClient = useQueryClient();
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
@@ -72,12 +77,40 @@ export default function AdminHumanReviewPage() {
         <p>Resolve only explicit disagreements after both independent reviews are submitted.</p>
       </div>
       {progressQuery.data && (
-        <section className="surface-card human-review-queue">
+        <section className="surface-card human-review-queue human-review-progress">
           <div className="card-eyebrow">PROGRESS</div>
           <p>
             {progressQuery.data.agreed} agreed · {progressQuery.data.disagreement} awaiting adjudication ·{" "}
             {progressQuery.data.adjudicated} adjudicated of {progressQuery.data.total_cases} cases
           </p>
+          <div className="human-review-evaluation-summary">
+            <div>
+              <strong>AI evaluation</strong>
+              <span>{progressQuery.data.evaluation.status} · {progressQuery.data.evaluation.evaluated_case_count}/{progressQuery.data.total_cases} cases · {progressQuery.data.evaluation.attempt_count} attempts</span>
+            </div>
+            <div>
+              <strong>Evaluation started</strong>
+              <span>{formatDate(progressQuery.data.evaluation.started_at)}</span>
+            </div>
+            <div>
+              <strong>Evaluation completed</strong>
+              <span>{formatDate(progressQuery.data.evaluation.finished_at)}</span>
+            </div>
+            <div>
+              <strong>Review batch started</strong>
+              <span>{formatDate(progressQuery.data.batch.started_at)}</span>
+            </div>
+          </div>
+          <div className="human-review-category-progress">
+            {progressQuery.data.category_progress.map((category) => (
+              <article key={category.category}>
+                <strong>{category.category.replaceAll("_", " ")}</strong>
+                <span>AI evaluated {category.evaluated_cases}/{category.total_cases}</span>
+                <span>Human reviewed {category.reviewed_cases}/{category.total_cases}</span>
+                <small>Last reviewed: {formatDate(category.last_reviewed_at)}</small>
+              </article>
+            ))}
+          </div>
         </section>
       )}
       <div className="human-review-layout">

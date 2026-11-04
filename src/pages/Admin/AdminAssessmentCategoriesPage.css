@@ -1,0 +1,101 @@
+.admin-assessment-categories {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.admin-assessment-categories-hero {
+  padding: 1rem 0;
+}
+
+.admin-assessment-categories-layout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(16rem, 0.8fr) minmax(20rem, 1.2fr);
+}
+
+.admin-assessment-category-list,
+.admin-assessment-category-editor,
+.admin-assessment-criteria-editor {
+  padding: 1.25rem;
+}
+
+.assessment-category-option {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle, #dfe4ea);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.85rem 0.25rem;
+  text-align: left;
+  width: 100%;
+}
+
+.assessment-category-option.selected {
+  color: var(--color-primary, #1d5fd1);
+}
+
+.assessment-category-option span,
+.assessment-criterion-card span {
+  color: var(--text-muted, #59636e);
+  font-size: 0.8rem;
+}
+
+.admin-assessment-category-editor form,
+.admin-assessment-criteria-editor form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.admin-assessment-category-editor label,
+.admin-assessment-criteria-editor label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.admin-assessment-category-editor input,
+.admin-assessment-category-editor textarea,
+.admin-assessment-criteria-editor input,
+.admin-assessment-criteria-editor textarea,
+.admin-assessment-criteria-editor select {
+  border: 1px solid var(--border-subtle, #dfe4ea);
+  border-radius: 0.35rem;
+  font: inherit;
+  padding: 0.6rem;
+}
+
+.admin-assessment-criteria-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 1fr);
+}
+
+.assessment-criterion-card {
+  border: 1px solid var(--border-subtle, #dfe4ea);
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+  padding: 0.75rem;
+}
+
+.assessment-criterion-card p {
+  margin: 0;
+}
+
+.admin-assessment-inline-fields {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.admin-assessment-error {
+  color: #b42318;
+}
+
+@media (max-width: 800px) {
+  .admin-assessment-categories-layout,
+  .admin-assessment-criteria-grid {
+    grid-template-columns: 1fr;
+  }
+}

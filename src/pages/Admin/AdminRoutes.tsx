@@ -7,6 +7,7 @@ import PlatformAdminDashboardPage from "./PlatformAdminDashboardPage";
 import AdminHumanReviewPage from "./AdminHumanReviewPage";
 import AdminReliabilityPage from "./AdminReliabilityPage";
 import AdminThresholdGovernancePage from "./AdminThresholdGovernancePage";
+import AdminAssessmentCategoriesPage from "./AdminAssessmentCategoriesPage";
 
 interface AdminRoutesProps {
   session: AuthSession;
@@ -24,6 +25,7 @@ export default function AdminRoutes({ session, onLogout }: AdminRoutesProps) {
         <Route path="/admin/human-review" element={<AdminHumanReviewPage />} />
         <Route path="/admin/reliability" element={<AdminReliabilityPage />} />
         <Route path="/admin/thresholds" element={<AdminThresholdGovernancePage />} />
+        <Route path="/admin/assessment-categories" element={<AdminAssessmentCategoriesPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </AdminShell>

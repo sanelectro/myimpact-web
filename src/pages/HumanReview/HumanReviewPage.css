@@ -10,6 +10,34 @@
   align-items: start;
 }
 
+.human-review-progress {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.human-review-evaluation-summary,
+.human-review-category-progress {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.human-review-evaluation-summary > div,
+.human-review-category-progress article {
+  background: var(--surface-muted, #f5f7fa);
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.7rem;
+}
+
+.human-review-evaluation-summary span,
+.human-review-category-progress span,
+.human-review-category-progress small {
+  color: var(--text-muted, #59636e);
+  font-size: 0.84rem;
+}
+
 .human-review-queue,
 .human-review-detail {
   padding: 1.5rem;

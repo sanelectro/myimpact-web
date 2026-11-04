@@ -41,6 +41,8 @@ import type {
   AdminCompanyUpdateRequest,
   AdminUserInvitation,
   AdminUserInvitationRequest,
+  AssessmentCategory,
+  GoalCriterionDefinition,
   CompanyRoleDefinition,
   CompanyRoleHistoryEvent,
   CompanyRoleWriteRequest,
@@ -83,6 +85,35 @@ export function getAllCompanyUsers() {
 
 export function getAdminCompanies() {
   return apiRequest<AdminCompany[]>("/api/v1/admin/companies");
+}
+
+export function getAssessmentCategories() {
+  return apiRequest<AssessmentCategory[]>("/api/v1/admin/assessment-categories");
+}
+
+export function createAssessmentCategory(payload: {
+  name: string;
+  description: string | null;
+}) {
+  return apiRequest<AssessmentCategory>("/api/v1/admin/assessment-categories", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export function addAssessmentCategoryCriterion(
+  categoryId: string,
+  payload: { title: string; definition: GoalCriterionDefinition },
+) {
+  return apiRequest<AssessmentCategory>(
+    `/api/v1/admin/assessment-categories/${encodeURIComponent(categoryId)}/criteria`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 export function updateAdminCompany(

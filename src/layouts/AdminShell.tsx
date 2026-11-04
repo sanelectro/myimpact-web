@@ -17,6 +17,7 @@ const navigation = [
   { to: "/admin/human-review", label: "Human review" },
   { to: "/admin/reliability", label: "Evaluation reliability" },
   { to: "/admin/thresholds", label: "Metric thresholds" },
+  { to: "/admin/assessment-categories", label: "Goal assessment categories" },
 ];
 
 export default function AdminShell({

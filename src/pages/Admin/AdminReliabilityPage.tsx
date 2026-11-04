@@ -11,7 +11,7 @@ import {
 } from "../../api/myImpact";
 import "./AdminReliabilityPage.css";
 
-const DEFAULT_DATASET = "m66-criterion-assessment-v1";
+const DEFAULT_DATASET = "m66-intelligence-comparison-v3";
 const DEFAULT_PROMPT = "m66-criterion-assessment-v1";
 const NORMALIZATION_VERSION = "m66-reliability-normalization-v1";
 
@@ -180,6 +180,43 @@ export default function AdminReliabilityPage() {
             <p role="alert">Could not load the reliability report: {errorMessage(reportQuery.error)}</p>
           ) : reportQuery.data ? (
             <>
+              {reportQuery.data.benchmark && (
+                <section className="reliability-benchmark-summary" aria-label="Benchmark governance">
+                  <div>
+                    <strong>{reportQuery.data.benchmark.dataset_version === "m66-intelligence-comparison-v3" ? "Optimized benchmark" : "Expanded benchmark"}</strong>
+                    <span>{String(reportQuery.data.benchmark.case_count)} cases · {String(reportQuery.data.benchmark.dataset_version)}</span>
+                  </div>
+                  <div>
+                    <strong>{String(reportQuery.data.benchmark.label_status ?? "UNKNOWN")}</strong>
+                    <span>Human review: {String(reportQuery.data.benchmark.human_review_status ?? "UNKNOWN")} · Thresholds: {String(reportQuery.data.benchmark.threshold_approval_status ?? "UNKNOWN")}</span>
+                  </div>
+                  <div>
+                    <strong>Categories</strong>
+                    <span>{(reportQuery.data.benchmark.categories ?? []).join(", ")}</span>
+                  </div>
+                </section>
+              )}
+              {reportQuery.data.benchmark?.category_breakdown && (
+                <div className="reliability-category-grid" aria-label="Category results">
+                  {Object.entries(reportQuery.data.benchmark.category_breakdown).map(([category, summary]) => (
+                    <article className="reliability-category" key={category}>
+                      <strong>{category.replaceAll("_", " ")}</strong>
+                      <span>{summary.complete}/{summary.cases} complete · {summary.divergent} divergent</span>
+                    </article>
+                  ))}
+                </div>
+              )}
+              {reportQuery.data.benchmark?.metrics && (
+                <div className="reliability-governance-metrics" aria-label="Governance metrics">
+                  {Object.entries(reportQuery.data.benchmark.metrics).map(([metric, result]) => (
+                    <article className="reliability-category" key={metric}>
+                      <strong>{metric.replaceAll("_", " ")}</strong>
+                      <span>{result.numerator}/{result.denominator} observed · {result.status}</span>
+                      <small>{result.reason}</small>
+                    </article>
+                  ))}
+                </div>
+              )}
               <div className="reliability-badge">{reportQuery.data.threshold_result === "NOT_EVALUABLE" ? "EXPLORATORY — NO APPROVED THRESHOLD SET" : reportQuery.data.threshold_result}</div>
               <div className="reliability-metric-grid">
                 {Object.entries(reportQuery.data.metrics).map(([key, metric]) => (

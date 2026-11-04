@@ -123,6 +123,24 @@ export interface AdminCompanyUpdateRequest {
   name: string;
 }
 
+export interface AssessmentCategoryCriterion {
+  id: string;
+  title: string;
+  definition: GoalCriterionDefinition;
+  created_at: string;
+  created_by_user_id: string;
+}
+
+export interface AssessmentCategory {
+  id: string;
+  name: string;
+  description: string | null;
+  criteria: AssessmentCategoryCriterion[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AdminUserInvitationRequest {
   name: string;
   email: string;
@@ -482,6 +500,8 @@ export interface HumanReviewBatch {
   status: string;
   expected_case_count: number;
   review_mode: "SINGLE_REVIEWER" | "DUAL_ADJUDICATED";
+  started_at: string;
+  completed_at: string | null;
 }
 
 export interface HumanReviewCaseSummary {
@@ -536,6 +556,24 @@ export interface HumanReviewProgress {
   agreed: number;
   disagreement: number;
   adjudicated: number;
+  category_progress: Array<{
+    category: string;
+    total_cases: number;
+    evaluated_cases: number;
+    reviewed_cases: number;
+    agreed_cases: number;
+    disagreement_cases: number;
+    adjudicated_cases: number;
+    last_reviewed_at: string | null;
+  }>;
+  evaluation: {
+    status: string;
+    experiment_id: string | null;
+    started_at: string | null;
+    finished_at: string | null;
+    evaluated_case_count: number;
+    attempt_count: number;
+  };
 }
 
 export interface ReliabilityExperiment {
@@ -586,6 +624,29 @@ export interface ReliabilityReport {
   divergent_case_ids: string[];
   limitations: string[];
   generated_at: string;
+  benchmark?: {
+    dataset_id?: string;
+    dataset_version?: string;
+    label_status?: string;
+    human_review_status?: string;
+    threshold_approval_status?: string;
+    case_count?: number;
+    categories?: string[];
+    category_breakdown?: Record<string, {
+      cases: number;
+      complete: number;
+      divergent: number;
+    }>;
+    metrics?: Record<string, {
+      value: number | null;
+      numerator: number;
+      denominator: number;
+      status: string;
+      reason: string;
+    }>;
+    baseline_dataset_id?: string;
+    minimum_sample_policy?: string;
+  };
 }
 
 export interface ThresholdMetricDefinition {

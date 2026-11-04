@@ -21,6 +21,11 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unknown error";
 }
 
+function formatDate(value: string | null | undefined) {
+  if (!value) return "Not yet";
+  return new Date(value).toLocaleString();
+}
+
 function displayAiLabel(caseContext: Record<string, unknown>, label: string) {
   const mapping = caseContext.ai_label_map;
   if (mapping && typeof mapping === "object" && !Array.isArray(mapping)) {
@@ -117,6 +122,9 @@ export default function HumanReviewPage() {
         <section className="surface-card human-review-queue">
           <div className="card-eyebrow">ASSIGNED CASES</div>
           <p className="human-review-version">{batch.dataset_version}</p>
+          <p className="human-review-version">
+            Review batch started {formatDate(batch.started_at)} · {batch.status}
+          </p>
           {queueQuery.isLoading && <p role="status">Loading cases…</p>}
           {queueQuery.isError && (
             <p role="alert">Could not load cases: {errorMessage(queueQuery.error)}</p>
