@@ -13,6 +13,8 @@ import type {
   GoalStatusHistory,
   GoalValidationRun,
   GoalEvidence,
+  GoalEvidenceContext,
+  EvidenceApprovalStatus,
   GoalInsight,
   ImpactAssessment,
   KnowledgeDocument,
@@ -774,6 +776,24 @@ export function submitGoalAssessmentFeedback(
 export function getGoalEvidence(goalId: string, userId?: string) {
   return apiRequest<GoalEvidence[]>(
     `/api/v1/goals/${encodeURIComponent(goalId)}/evidence${userQuery(userId)}`,
+  );
+}
+
+export function getGoalEvidenceContext(goalId: string, offset: number, limit = 50) {
+  return apiRequest<GoalEvidenceContext>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/evidence-context${userQuery()}&limit=${limit}&offset=${offset}`,
+  );
+}
+
+export function linkGoalEvidence(goalId: string, payload: {
+  evidence_id: string;
+  mapping_kind: "PRIMARY" | "CONTRIBUTION";
+  contribution_description: string | null;
+  relevance: "low" | "medium" | "high";
+}) {
+  return apiRequest<{ mapping_id: string; approval_status: EvidenceApprovalStatus }>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/evidence-links${userQuery()}`,
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) },
   );
 }
 

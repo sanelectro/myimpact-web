@@ -517,6 +517,34 @@ export interface GoalEvidence {
   reason: string | null;
 }
 
+export interface GoalEvidenceOrigin {
+  origin: "DIRECT" | "INHERITED";
+  source_goal_id: string;
+  goal_path: string[];
+  mapping_id: string;
+  mapping_kind: "PRIMARY" | "CONTRIBUTION";
+  contribution_description: string | null;
+  relevance: "low" | "medium" | "high";
+  confidence: number;
+  approval_status: EvidenceApprovalStatus | null;
+}
+
+export interface GoalEvidenceContext {
+  items: Array<{
+    evidence_id: string;
+    title: string;
+    description: string | null;
+    source_type: string;
+    source_url: string | null;
+    captured_at: string;
+    source_updated_at: string | null;
+    origins: GoalEvidenceOrigin[];
+  }>;
+  has_more: boolean;
+  next_offset: number | null;
+  hierarchy_truncated: boolean;
+}
+
 export type EvidenceApprovalStatus =
   | "pending"
   | "approved"

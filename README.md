@@ -44,6 +44,11 @@ or invalid relationship is reported without modifying the goal definition.
 The hierarchy API and its database migrations must be deployed before using
 these controls.
 
+The opt-in evidence context distinguishes direct mappings from inherited
+origins and warns when traversal is truncated. An eligible owner can link
+evidence already attached to another owned goal as primary or contribution
+evidence; the new mapping has its own pending approval.
+
 Evidence submission is shown only when the server confirms the goal is eligible.
 The UI reads `GET /api/v1/goals/{goal_id}/evidence-eligibility` and uses the
 backend's eligibility result, including legacy compatibility, rather than
