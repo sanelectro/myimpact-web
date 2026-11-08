@@ -41,6 +41,7 @@ export default function GoalEvidenceContextPanel({ goalId, eligibility, eligibil
     onSuccess: async () => {
       setEvidenceId("");
       setDescription("");
+      void client.invalidateQueries({ queryKey: ["goal-measures"] });
       await Promise.all([
         client.invalidateQueries({ queryKey: ["goal-evidence"] }),
         client.invalidateQueries({ queryKey: ["goal-evidence-context"] }),

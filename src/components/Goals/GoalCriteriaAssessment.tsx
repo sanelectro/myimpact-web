@@ -71,6 +71,8 @@ export default function GoalCriteriaAssessment({ goalId }: { goalId: string }) {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["goal-criteria", goalId] }),
       queryClient.invalidateQueries({ queryKey: ["goal-assessment", goalId] }),
+      queryClient.invalidateQueries({ queryKey: ["goal-measures", goalId] }),
+      queryClient.invalidateQueries({ queryKey: ["goal-requirements", goalId] }),
       queryClient.invalidateQueries({ queryKey: ["goals"] }),
     ]);
   };

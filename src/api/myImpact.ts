@@ -6,6 +6,8 @@ import {
 } from "./client";
 import type {
   Goal,
+  GoalMeasures,
+  GoalRequirements,
   GoalHierarchy,
   GoalHierarchySummary,
   GoalRelationshipEvent,
@@ -85,6 +87,14 @@ export function getGoals() {
 
 export function getGoalHierarchy(goalId: string) {
   return apiRequest<GoalHierarchy>(`/api/v1/goals/${encodeURIComponent(goalId)}/hierarchy${userQuery()}`);
+}
+
+export function getGoalRequirements(goalId: string) {
+  return apiRequest<GoalRequirements>(`/api/v1/goals/${encodeURIComponent(goalId)}/requirements${userQuery()}`);
+}
+
+export function getGoalMeasures(goalId: string) {
+  return apiRequest<GoalMeasures>(`/api/v1/goals/${encodeURIComponent(goalId)}/measures${userQuery()}&include_assessment=false`);
 }
 
 export function getGoalChildren(goalId: string, offset: number, limit = 50) {

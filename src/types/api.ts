@@ -226,6 +226,36 @@ export interface GoalStructuredFields {
   target: string | null;
   dependencies: string[];
   role_alignment: string | null;
+  deferred_requirements?: GoalDeferredRequirement[];
+}
+
+export interface GoalDeferredRequirement {
+  requirement: "baseline" | "target";
+  reason: string;
+  due_date: string | null;
+  resolution_stage: string | null;
+  state: "OPEN" | "RESOLVED" | "NOT_APPLICABLE";
+  resolution_reason: string | null;
+  related_child_goal_id: string | null;
+}
+
+export interface GoalRequirements {
+  goal_version: number;
+  evaluated_on: string;
+  requirements: Array<{
+    requirement: string;
+    classification: "REQUIRED_NOW" | "DEFERRED_ALLOWED" | "NOT_APPLICABLE";
+    state: "PRESENT" | "MISSING" | "DEFERRED" | "OVERDUE" | "NOT_APPLICABLE";
+  }>;
+  deferred_requirements: GoalDeferredRequirement[];
+}
+
+export interface GoalMeasures {
+  goal_id: string;
+  child_execution: { total: number; by_status: Partial<Record<GoalStatus, number>> };
+  own_criterion_assessment: GoalAssessment | null;
+  outcome_achievement: null;
+  demonstrated_impact: null;
 }
 
 export type GoalValidationStatus = "READY" | "NEEDS_REFINEMENT" | "NEEDS_DISCUSSION" | "INVALID";
@@ -326,7 +356,9 @@ export interface GoalCreateRequest {
   structured_fields: GoalStructuredFields;
 }
 
-export type GoalUpdateRequest = Partial<GoalCreateRequest>;
+export type GoalUpdateRequest = Partial<GoalCreateRequest> & {
+  expected_deferred_requirements?: GoalDeferredRequirement[];
+};
 
 export type GoalCriterionType = "BINARY" | "MILESTONE_BASED" | "MEASURABLE_TARGET";
 export type GoalCriterionApprovalStatus = "PROPOSED" | "APPROVED";

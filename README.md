@@ -38,6 +38,13 @@ requests. Goal detail lets the employee run validation and review the current an
 previous validation findings; validation does not rewrite goal content. Lifecycle
 approval/status is shown separately.
 
+The goal editor supports baseline and target deferrals with a reason and a due
+date or resolution stage. Resolving a deferral requires a value and a
+resolution reason; marking it not applicable requires a reason. The detail
+page shows current server-evaluated requirement status separately from frozen
+validation runs. If another edit changes deferrals while the editor is open,
+the server rejects a stale deferral edit; reload the goal before retrying.
+
 Goal detail also shows ancestors, direct children, and paginated relationship
 history. Owners can connect, reparent, or disconnect a goal; a stale revision
 or invalid relationship is reported without modifying the goal definition.
@@ -48,6 +55,11 @@ The opt-in evidence context distinguishes direct mappings from inherited
 origins and warns when traversal is truncated. An eligible owner can link
 evidence already attached to another owned goal as primary or contribution
 evidence; the new mapping has its own pending approval.
+
+The measures panel separates direct-child lifecycle counts, the goal's own
+criterion assessment and evidence coverage, outcome achievement, and
+demonstrated impact. Child completion does not establish outcome or impact;
+the latter remain undetermined in this view.
 
 Evidence submission is shown only when the server confirms the goal is eligible.
 The UI reads `GET /api/v1/goals/{goal_id}/evidence-eligibility` and uses the

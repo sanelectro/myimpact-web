@@ -42,6 +42,8 @@ import GoalCriteriaAssessment from "../../components/Goals/GoalCriteriaAssessmen
 import GoalValidationPanel from "../../components/Goals/GoalValidationPanel";
 import GoalHierarchyPanel from "../../components/Goals/GoalHierarchyPanel";
 import GoalEvidenceContextPanel from "../../components/Goals/GoalEvidenceContextPanel";
+import GoalRequirementsPanel from "../../components/Goals/GoalRequirementsPanel";
+import GoalMeasuresPanel from "../../components/Goals/GoalMeasuresPanel";
 import EvidenceEligibilityGate from "../../components/Goals/EvidenceEligibilityGate";
 import "./GoalDetail.css";
 
@@ -149,6 +151,7 @@ export default function GoalDetailPage() {
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["goal-validation-history", goalId] }),
+        queryClient.invalidateQueries({ queryKey: ["goal-requirements", goalId] }),
         queryClient.invalidateQueries({ queryKey: ["goal-evidence-eligibility", goalId] }),
         queryClient.invalidateQueries({ queryKey: ["goal", goalId] }),
       ]);
@@ -198,6 +201,7 @@ export default function GoalDetailPage() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["goal-evidence", goalId] }),
         queryClient.invalidateQueries({ queryKey: ["goal-evidence-context"] }),
+        queryClient.invalidateQueries({ queryKey: ["goal-measures"] }),
         queryClient.invalidateQueries({ queryKey: ["goal-assessment", goalId] }),
         queryClient.invalidateQueries({ queryKey: ["goal-impact", goalId] }),
         queryClient.invalidateQueries({ queryKey: ["goal-insight", goalId] }),
@@ -232,6 +236,7 @@ export default function GoalDetailPage() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["goal-evidence", goalId] }),
         queryClient.invalidateQueries({ queryKey: ["goal-evidence-context"] }),
+        queryClient.invalidateQueries({ queryKey: ["goal-measures"] }),
         queryClient.invalidateQueries({ queryKey: ["goal-assessment", goalId] }),
         queryClient.invalidateQueries({ queryKey: ["goal-impact", goalId] }),
         queryClient.invalidateQueries({ queryKey: ["goal-insight", goalId] }),
@@ -337,6 +342,7 @@ export default function GoalDetailPage() {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["goal-evidence", goalId] }),
           queryClient.invalidateQueries({ queryKey: ["goal-evidence-context"] }),
+          queryClient.invalidateQueries({ queryKey: ["goal-measures"] }),
           queryClient.invalidateQueries({ queryKey: ["goal-assessment", goalId] }),
           queryClient.invalidateQueries({ queryKey: ["goal-impact", goalId] }),
           queryClient.invalidateQueries({ queryKey: ["goal-insight", goalId] }),
@@ -398,6 +404,7 @@ export default function GoalDetailPage() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["goal-evidence", goalId] }),
         queryClient.invalidateQueries({ queryKey: ["goal-evidence-context"] }),
+        queryClient.invalidateQueries({ queryKey: ["goal-measures"] }),
         queryClient.invalidateQueries({ queryKey: ["goal-assessment", goalId] }),
         queryClient.invalidateQueries({ queryKey: ["goal-impact", goalId] }),
         queryClient.invalidateQueries({ queryKey: ["goal-insight", goalId] }),
@@ -699,6 +706,8 @@ export default function GoalDetailPage() {
 
       <GoalHierarchyPanel key={`hierarchy-${goalData.id}`} goalId={goalData.id} />
 
+      <GoalRequirementsPanel goalId={goalData.id} />
+
       <GoalValidationPanel
         history={validationHistory.data ?? []}
         isLoading={validationHistory.isLoading}
@@ -710,6 +719,8 @@ export default function GoalDetailPage() {
       />
 
       <GoalCriteriaAssessment goalId={goalData.id} />
+
+      <GoalMeasuresPanel goalId={goalData.id} />
 
       <GoalMilestones goalId={goalData.id} />
 

@@ -10,10 +10,12 @@ import {
 } from "../../api/myImpact";
 import type {
   GoalCriterionDefinition,
+  GoalDeferredRequirement,
   GoalLevel,
   GoalScope,
   GoalStructuredFields,
 } from "../../types/api";
+import DeferredRequirementsEditor, { validateDeferrals } from "../../components/Goals/DeferredRequirementsEditor";
 import "./GoalForm.css";
 
 const scopeOptions: { value: GoalScope; label: string; description: string }[] = [
@@ -68,6 +70,9 @@ export default function GoalFormPage() {
   const [target, setTarget] = useState("");
   const [dependenciesText, setDependenciesText] = useState("");
   const [roleAlignment, setRoleAlignment] = useState("");
+  const [deferrals, setDeferrals] = useState<GoalDeferredRequirement[]>([]);
+  const [originalDeferrals, setOriginalDeferrals] = useState<GoalDeferredRequirement[]>([]);
+  const [deferralsEdited, setDeferralsEdited] = useState(false);
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
@@ -94,6 +99,9 @@ export default function GoalFormPage() {
     setTarget(fields?.target ?? "");
     setDependenciesText(listToText(fields?.dependencies));
     setRoleAlignment(fields?.role_alignment ?? "");
+    setDeferrals(fields?.deferred_requirements ?? []);
+    setOriginalDeferrals(fields?.deferred_requirements ?? []);
+    setDeferralsEdited(false);
   }, [goalQuery.data]);
 
   const mutation = useMutation({
@@ -104,6 +112,10 @@ export default function GoalFormPage() {
       }
       if (scope === "organization" && !profileQuery.data?.organization_id) {
         throw new Error("Add your company in My Profile before creating an organization-specific goal.");
+      }
+      if (deferralsEdited) {
+        const error = validateDeferrals(deferrals, baseline, target);
+        if (error) throw new Error(error);
       }
 
       const successCriteria = textToList(successCriteriaText).map((description) => {
@@ -133,6 +145,14 @@ export default function GoalFormPage() {
         target: target.trim() || null,
         dependencies: textToList(dependenciesText),
         role_alignment: roleAlignment.trim() || null,
+        ...(deferralsEdited ? {
+          deferred_requirements: deferrals.map((item) => ({
+            ...item,
+            reason: item.reason.trim(),
+            resolution_stage: item.resolution_stage?.trim() || null,
+            resolution_reason: item.resolution_reason?.trim() || null,
+          })),
+        } : {}),
       };
       const payload = {
         title: title.trim(),
@@ -146,13 +166,17 @@ export default function GoalFormPage() {
       };
 
       return isEdit
-        ? updateGoal(goalId!, payload)
+        ? updateGoal(goalId!, {
+          ...payload,
+          ...(deferralsEdited ? { expected_deferred_requirements: originalDeferrals } : {}),
+        })
         : createGoal(payload);
     },
     onSuccess: async (goal) => {
       await queryClient.invalidateQueries({ queryKey: ["goals"] });
       await queryClient.invalidateQueries({ queryKey: ["goal", goal.id] });
       await queryClient.invalidateQueries({ queryKey: ["goal-evidence-eligibility", goal.id] });
+      await queryClient.invalidateQueries({ queryKey: ["goal-requirements", goal.id] });
       navigate(`/goals/${goal.id}`);
     },
     onError: (error) => {
@@ -287,6 +311,12 @@ export default function GoalFormPage() {
             <textarea value={roleAlignment} onChange={(event) => setRoleAlignment(event.target.value)} rows={3} maxLength={2000} placeholder="How this goal aligns with your role or responsibilities" />
           </label>
         </div>
+
+        <DeferredRequirementsEditor
+          items={deferrals}
+          original={originalDeferrals}
+          onChange={(items) => { setDeferrals(items); setDeferralsEdited(true); }}
+        />
 
         <div className="form-section">
           <div className="eyebrow">GOAL SCOPE</div>

@@ -53,6 +53,13 @@
   margin-top: 18px;
 }
 
+.goal-deferral-fields {
+  margin: 16px 0 0;
+  padding: 14px;
+  border: 1px solid #dfe4ec;
+  border-radius: 10px;
+}
+
 .form-field:first-of-type {
   margin-top: 0;
 }
