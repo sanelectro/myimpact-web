@@ -50,6 +50,8 @@ the server rejects a stale deferral edit; reload the goal before retrying.
 Goal detail also shows ancestors, direct children, and paginated relationship
 history. Owners can connect, reparent, or disconnect a goal; a stale revision
 or invalid relationship is reported without modifying the goal definition.
+When creating a goal, an owner can optionally select an existing parent; the
+goal and relationship are saved together, or not at all.
 The hierarchy API and its database migrations must be deployed before using
 these controls.
 

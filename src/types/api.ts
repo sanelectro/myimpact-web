@@ -350,13 +350,14 @@ export interface GoalCreateRequest {
   description: string | null;
   scope: GoalScope;
   goal_level?: GoalLevel | null;
+  parent_goal_id?: string | null;
   start_date: string | null;
   end_date: string | null;
   source: string | null;
   structured_fields: GoalStructuredFields;
 }
 
-export type GoalUpdateRequest = Partial<GoalCreateRequest> & {
+export type GoalUpdateRequest = Partial<Omit<GoalCreateRequest, "parent_goal_id">> & {
   expected_deferred_requirements?: GoalDeferredRequirement[];
 };
 

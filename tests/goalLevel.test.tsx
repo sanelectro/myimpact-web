@@ -3,13 +3,14 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import GoalFormPage from "../src/pages/Goals/GoalFormPage";
-import { createGoal, getGoal, getProfile, updateGoal } from "../src/api/myImpact";
+import { createGoal, getGoal, getGoals, getProfile, updateGoal } from "../src/api/myImpact";
 
 vi.mock("../src/api/myImpact", () => ({
   createGoal: vi.fn(),
   getGoal: vi.fn(),
+  getGoals: vi.fn(),
   getProfile: vi.fn(),
   updateGoal: vi.fn(),
 }));
@@ -63,6 +64,7 @@ async function renderForm(path: string) {
 
 describe("goal level form", () => {
   (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  beforeEach(() => vi.mocked(getGoals).mockResolvedValue([]));
   afterEach(() => vi.resetAllMocks());
 
   it("creates an unspecified level as null", async () => {
@@ -78,6 +80,48 @@ describe("goal level form", () => {
       container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     });
     await waitFor(() => expect(createGoal).toHaveBeenCalledWith(expect.objectContaining({ goal_level: null })));
+    await act(async () => root.unmount());
+    client.clear();
+    container.remove();
+  });
+
+  it("creates a goal with the selected parent", async () => {
+    vi.mocked(getProfile).mockResolvedValue({ organization_id: null } as Awaited<ReturnType<typeof getProfile>>);
+    vi.mocked(getGoals).mockResolvedValue([{ ...goal, title: "Existing parent" }] as Awaited<ReturnType<typeof getGoals>>);
+    vi.mocked(createGoal).mockResolvedValue({ id: "goal-2" } as Awaited<ReturnType<typeof createGoal>>);
+    const { container, root, client } = await renderForm("/goals/new");
+    const title = container.querySelector<HTMLInputElement>("input[placeholder^='e.g. Improve']")!;
+    await waitFor(() => expect(container.textContent).toContain("Existing parent"));
+    const select = Array.from(container.querySelectorAll("select")).find((item) =>
+      Array.from(item.options).some((option) => option.value === "goal-1"),
+    )!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(title, "Child");
+      title.dispatchEvent(new Event("input", { bubbles: true }));
+      select.value = "goal-1";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+    await waitFor(() => expect(createGoal).toHaveBeenCalledWith(expect.objectContaining({ parent_goal_id: "goal-1" })));
+    await act(async () => root.unmount());
+    client.clear();
+    container.remove();
+  });
+
+  it("reports parent list failures without preventing standalone creation", async () => {
+    vi.mocked(getProfile).mockResolvedValue({ organization_id: null } as Awaited<ReturnType<typeof getProfile>>);
+    vi.mocked(getGoals).mockRejectedValue(new Error("Service unavailable"));
+    vi.mocked(createGoal).mockResolvedValue({ id: "goal-1" } as Awaited<ReturnType<typeof createGoal>>);
+    const { container, root, client } = await renderForm("/goals/new");
+    await waitFor(() => expect(container.textContent).toContain("Could not load parent goals: Service unavailable"));
+    const title = container.querySelector<HTMLInputElement>("input[placeholder^='e.g. Improve']")!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(title, "Standalone");
+      title.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+    await waitFor(() => expect(createGoal).toHaveBeenCalledOnce());
+    expect(vi.mocked(createGoal).mock.calls[0][0]).not.toHaveProperty("parent_goal_id");
     await act(async () => root.unmount());
     client.clear();
     container.remove();

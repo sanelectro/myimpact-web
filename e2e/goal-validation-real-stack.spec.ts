@@ -8,6 +8,7 @@ test.skip(
 );
 
 test("validates, approves and activates a goal before accepting evidence", async ({ page, request }) => {
+  test.setTimeout(60_000);
   const authURL = process.env.MYIMPACT_E2E_AUTH_API_URL;
   const aiURL = process.env.MYIMPACT_E2E_AI_API_URL;
   for (const url of [authURL, aiURL, process.env.PLAYWRIGHT_BASE_URL]) {
@@ -61,6 +62,11 @@ test("validates, approves and activates a goal before accepting evidence", async
     const { user, access_token: token } = await registered.json();
     const headers = { Authorization: `Bearer ${token}` };
     const params = { user_id: user.id };
+    const parentResponse = await request.post(`${aiURL}/api/v1/goals`, {
+      params, headers, data: { title: "Annual parent", goal_level: "ANNUAL" },
+    });
+    expect(parentResponse.status(), await parentResponse.text()).toBe(201);
+    const parent = await parentResponse.json();
     await page.goto("/login");
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill(password);
@@ -69,6 +75,7 @@ test("validates, approves and activates a goal before accepting evidence", async
     await page.goto("/goals/new");
     await page.getByLabel(/Goal title/).fill("Validate the release workflow");
     await page.getByLabel(/Goal level/).selectOption("ANNUAL");
+    await page.getByLabel(/Parent goal/).selectOption(parent.id);
     await page.getByLabel("Accountability").fill("Release owner");
     await page.getByLabel(/Success criteria/).fill("Release completed");
     await page.getByLabel("Baseline deferral state").selectOption("OPEN");
@@ -79,8 +86,18 @@ test("validates, approves and activates a goal before accepting evidence", async
     const goalId = new URL(page.url()).pathname.split("/").pop()!;
     const saved = await request.get(`${aiURL}/api/v1/goals/${goalId}`, { params, headers });
     expect(saved.status(), await saved.text()).toBe(200);
-    expect((await saved.json()).structured_fields.success_criteria).toMatchObject([{
+    const savedGoal = await saved.json();
+    expect(savedGoal).toMatchObject({ parent_goal_id: parent.id, relationship_revision: 1 });
+    expect(savedGoal.structured_fields.success_criteria).toMatchObject([{
       criterion_type: "BINARY", description: "Release completed", completion_conditions: "Release completed",
+    }]);
+    const relationshipHistory = await request.get(`${aiURL}/api/v1/goals/${goalId}/relationship-history`, {
+      params, headers,
+    });
+    expect(relationshipHistory.status(), await relationshipHistory.text()).toBe(200);
+    expect(await relationshipHistory.json()).toMatchObject([{
+      old_parent_goal_id: null, new_parent_goal_id: parent.id, relationship_revision: 1,
+      actor_user_id: user.id,
     }]);
     const prematureApproval = await request.post(`${aiURL}/api/v1/goals/${goalId}/approve`, {
       params, headers,
@@ -89,7 +106,7 @@ test("validates, approves and activates a goal before accepting evidence", async
 
     const panel = page.locator("#goal-validation");
     await panel.getByRole("button", { name: "Validate goal" }).click();
-    await expect(panel.getByRole("alert")).toContainText("Could not validate this goal");
+    await expect(panel.getByRole("alert")).toContainText("Could not validate this goal", { timeout: 15_000 });
     const failedHistory = await request.get(`${aiURL}/api/v1/goals/${goalId}/validation-history`, {
       params, headers,
     });
@@ -97,7 +114,7 @@ test("validates, approves and activates a goal before accepting evidence", async
     expect(await failedHistory.json()).toEqual([]);
 
     await panel.getByRole("button", { name: "Validate goal" }).click();
-    await expect(panel.locator(".goal-validation-status")).toHaveText("Ready");
+    await expect(panel.locator(".goal-validation-status")).toHaveText("Ready", { timeout: 15_000 });
     const history = await request.get(`${aiURL}/api/v1/goals/${goalId}/validation-history`, {
       params, headers,
     });

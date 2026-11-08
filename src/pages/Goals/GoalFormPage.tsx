@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   createGoal,
   getGoal,
+  getGoals,
   getProfile,
   updateGoal,
 } from "../../api/myImpact";
@@ -50,11 +51,17 @@ export default function GoalFormPage() {
     queryKey: ["profile"],
     queryFn: getProfile,
   });
+  const parentGoalsQuery = useQuery({
+    queryKey: ["goals"],
+    queryFn: getGoals,
+    enabled: !isEdit,
+  });
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [scope, setScope] = useState<GoalScope>("personal");
   const [goalLevel, setGoalLevel] = useState<GoalLevel | "">("");
+  const [parentGoalId, setParentGoalId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [source, setSource] = useState("");
@@ -170,7 +177,7 @@ export default function GoalFormPage() {
           ...payload,
           ...(deferralsEdited ? { expected_deferred_requirements: originalDeferrals } : {}),
         })
-        : createGoal(payload);
+        : createGoal({ ...payload, ...(parentGoalId ? { parent_goal_id: parentGoalId } : {}) });
     },
     onSuccess: async (goal) => {
       await queryClient.invalidateQueries({ queryKey: ["goals"] });
@@ -266,6 +273,20 @@ export default function GoalFormPage() {
             </select>
             <small className="field-help">Level describes the planning horizon, not the goal scope or parent relationship.</small>
           </label>
+          {!isEdit && <div className="form-field">
+            <label>
+              <span>Parent goal <small>(optional)</small></span>
+              <select value={parentGoalId} disabled={parentGoalsQuery.isLoading || (parentGoalsQuery.isError && !parentGoalsQuery.data)} onChange={(event) => setParentGoalId(event.target.value)}>
+                <option value="">No parent</option>
+                {(parentGoalsQuery.data ?? []).map((goal) => <option key={goal.id} value={goal.id}>{goal.title}</option>)}
+              </select>
+            </label>
+            <small className="field-help">Choose one of your existing goals, or create this goal independently.</small>
+            {parentGoalsQuery.isError && <>
+              <p className="form-error" role="alert">Could not load parent goals: {parentGoalsQuery.error.message}</p>
+              <button type="button" className="button button-secondary" onClick={() => void parentGoalsQuery.refetch()}>Retry parent goals</button>
+            </>}
+          </div>}
           <label className="form-field">
             <span>Goal type</span>
             <input value={goalType} onChange={(event) => setGoalType(event.target.value)} maxLength={100} placeholder="e.g. delivery, development, operational" />
