@@ -509,6 +509,9 @@ export interface HumanReviewCaseSummary {
   category: string | null;
   status: string;
   submitted_by_current_user: boolean;
+  has_draft: boolean;
+  assigned_at: string | null;
+  last_reviewed_at: string | null;
 }
 
 export interface HumanReviewSubmission {
@@ -518,14 +521,49 @@ export interface HumanReviewSubmission {
   label: string;
   rationale: string;
   submitted_at: string;
+  updated_at: string | null;
+  is_final: boolean;
+  review_stage: "BLIND" | "POST_AI" | "PROPOSAL_ASSISTED";
+  ai_attempt_id: string | null;
+  reference_proposal_id: string | null;
+  confidence: number | null;
+  context_notes: string | null;
+  evidence_findings: Array<Record<string, unknown>> | null;
+}
+
+export interface HumanReviewBatchPreview {
+  batch: HumanReviewBatch;
+  total_cases: number;
+  saved_cases: number;
+  can_finalize: boolean;
+  is_final: boolean;
+  preview_token: string;
+  reviews: Array<{
+    case: Record<string, unknown> | null;
+    review: HumanReviewSubmission;
+  }>;
 }
 
 export interface HumanReviewCase {
   case: Record<string, unknown>;
   status: string;
   own_review: HumanReviewSubmission | null;
+  post_ai_review: HumanReviewSubmission | null;
+  post_ai_draft: HumanReviewSubmission | null;
   reviews: HumanReviewSubmission[];
   ai_assessment: HumanReviewAIAssessment | null;
+  reference_proposal: HumanReviewReferenceProposal | null;
+}
+
+export interface HumanReviewReferenceProposal {
+  id: string;
+  source_document: string;
+  proposed_label: string;
+  rationale: string;
+  confidence: string | null;
+  review_flags: string[];
+  requires_owner_attention: boolean;
+  status: string;
 }
 
 export interface HumanReviewAIAssessment {

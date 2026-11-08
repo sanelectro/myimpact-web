@@ -27,6 +27,7 @@ import NotificationsPage from "./pages/Notifications/NotificationsPage";
 import AdminRoutes from "./pages/Admin/AdminRoutes";
 import CompanyRolesPage from "./pages/CompanyRoles/CompanyRolesPage";
 import HumanReviewPage from "./pages/HumanReview/HumanReviewPage";
+import { ReviewBatchProvider } from "./pages/Reviewer/ReviewBatchSelection";
 import ReviewerRoutes from "./pages/Reviewer/ReviewerRoutes";
 import { canManageCompanyRoles } from "./auth/rolePermissions";
 
@@ -149,7 +150,7 @@ function ProductRoutes({
         <Route path="/milestones" element={<MilestonesPage />} />
         <Route path="/archives" element={<ArchivesPage />} />
         <Route path="/pending-requests" element={<PendingRequestsPage />} />
-        <Route path="/human-review" element={<HumanReviewPage />} />
+        <Route path="/human-review" element={<ReviewBatchProvider><HumanReviewPage /></ReviewBatchProvider>} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/profile" element={<ProfilePage onProfileUpdated={onProfileUpdated} />} />
         <Route

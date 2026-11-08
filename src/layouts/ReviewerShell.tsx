@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { AuthSession } from "../auth/auth";
+import { NavLink } from "react-router-dom";
 import "./AppShell.css";
 
 interface ReviewerShellProps {
@@ -20,7 +21,7 @@ export default function ReviewerShell({ children, session, onLogout }: ReviewerS
           </div>
         </div>
         <nav className="navigation" aria-label="Reviewer navigation">
-          <a className="nav-item active" href="/evaluate">Evaluate Intelligence</a>
+          <NavLink className="nav-item" to="/evaluate" end>Review dashboard</NavLink>
         </nav>
         <div className="sidebar-footer">Reviewer workspace</div>
       </aside>

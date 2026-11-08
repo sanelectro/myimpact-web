@@ -49,6 +49,7 @@ import type {
   PendingEvidenceApproval,
   Notification,
   HumanReviewBatch,
+  HumanReviewBatchPreview,
   HumanReviewCase,
   HumanReviewCaseSummary,
   HumanReviewSubmission,
@@ -217,10 +218,27 @@ export function getHumanReviewCase(batchId: string, caseId: string) {
   );
 }
 
+export function getHumanReviewBatchPreview(batchId: string) {
+  return apiRequest<HumanReviewBatchPreview>(
+    `/api/v1/human-review/batches/${encodeURIComponent(batchId)}/reviews/preview`,
+  );
+}
+
+export function submitFinalHumanReview(batchId: string, previewToken: string) {
+  return apiRequest<{ is_final: boolean; finalized_cases: number }>(
+    `/api/v1/human-review/batches/${encodeURIComponent(batchId)}/reviews/final`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preview_token: previewToken }),
+    },
+  );
+}
+
 export function submitHumanReview(
   batchId: string,
   caseId: string,
-  payload: { label: string; rationale: string },
+  payload: HumanReviewPayload,
 ) {
   return apiRequest<HumanReviewSubmission>(
     `/api/v1/human-review/batches/${encodeURIComponent(batchId)}/cases/${encodeURIComponent(caseId)}/reviews`,
@@ -230,6 +248,32 @@ export function submitHumanReview(
       body: JSON.stringify(payload),
     },
   );
+}
+
+export function saveHumanReviewDraft(
+  batchId: string,
+  caseId: string,
+  payload: HumanReviewPayload,
+) {
+  return apiRequest<HumanReviewSubmission>(
+    `/api/v1/human-review/batches/${encodeURIComponent(batchId)}/cases/${encodeURIComponent(caseId)}/reviews/draft`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+interface HumanReviewPayload {
+    label: string;
+    rationale: string;
+    review_stage?: "BLIND" | "POST_AI" | "PROPOSAL_ASSISTED";
+    ai_attempt_id?: string;
+    reference_proposal_id?: string;
+    confidence?: number;
+    context_notes?: string;
+    evidence_findings?: Array<Record<string, unknown>>;
 }
 
 export function getHumanReviewAdjudications(batchId: string) {

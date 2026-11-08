@@ -8,8 +8,17 @@ import {
 } from "../../api/myImpact";
 import "../HumanReview/HumanReviewPage.css";
 import ReviewCaseContext from "../HumanReview/ReviewCaseContext";
+import { reviewLabel } from "../HumanReview/goalValidationLabels";
+import { formatCategory } from "../HumanReview/reviewerCategories";
 
 const LABELS = ["NOT_ASSESSED", "NOT_STARTED", "IN_PROGRESS", "MET", "NEEDS_REVIEW"];
+
+function reviewLabels(caseContext: Record<string, unknown> | null) {
+  const options = caseContext?.review_label_options;
+  return Array.isArray(options)
+    ? options.filter((label): label is string => typeof label === "string")
+    : LABELS;
+}
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unknown error";
@@ -144,7 +153,7 @@ export default function AdminHumanReviewPage() {
         </section>
         <section className="surface-card human-review-detail">
           {!selected ? (
-            <p>Select a disagreement to inspect both independent rationales.</p>
+            <p>Select a disagreement to inspect both primary-review rationales.</p>
           ) : (
             <>
               <ReviewCaseContext
@@ -152,11 +161,21 @@ export default function AdminHumanReviewPage() {
                 heading={selectedCaseId ?? ""}
                 eyebrow="ADJUDICATION CONTEXT"
               />
+              {typeof selected.case?.category === "string" && (
+                <p className="human-review-category-label">
+                  Category: {formatCategory(selected.case.category)}
+                </p>
+              )}
               <div className="human-review-context">
                 {selected.reviews.map((review) => (
                   <div key={review.id}>
-                    <dt>Reviewer {review.reviewer_user_id}</dt>
-                    <dd><strong>{review.label}</strong>: {review.rationale}</dd>
+                    <dt>
+                      Reviewer {review.reviewer_user_id} ·{" "}
+                      {review.review_stage === "PROPOSAL_ASSISTED"
+                        ? "AI proposal-assisted"
+                        : "blind"}
+                    </dt>
+                    <dd><strong>{reviewLabel(review.label, selected.case)}</strong>: {review.rationale}</dd>
                   </div>
                 ))}
               </div>
@@ -165,7 +184,7 @@ export default function AdminHumanReviewPage() {
                   Final label
                   <select value={finalLabel} onChange={(event) => setFinalLabel(event.target.value)} required>
                     <option value="">Select a label</option>
-                    {LABELS.map((label) => <option key={label} value={label}>{label}</option>)}
+                    {reviewLabels(selected.case).map((label) => <option key={label} value={label}>{reviewLabel(label, selected.case)}</option>)}
                   </select>
                 </label>
                 <label>
