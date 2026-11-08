@@ -10,6 +10,7 @@ import {
 } from "../../api/myImpact";
 import type {
   GoalCriterionDefinition,
+  GoalLevel,
   GoalScope,
   GoalStructuredFields,
 } from "../../types/api";
@@ -51,6 +52,7 @@ export default function GoalFormPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [scope, setScope] = useState<GoalScope>("personal");
+  const [goalLevel, setGoalLevel] = useState<GoalLevel | "">("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [source, setSource] = useState("");
@@ -73,6 +75,7 @@ export default function GoalFormPage() {
     setTitle(goalQuery.data.title);
     setDescription(goalQuery.data.description ?? "");
     setScope(goalQuery.data.scope);
+    setGoalLevel(goalQuery.data.goal_level ?? "");
     setStartDate(toInputDate(goalQuery.data.start_date));
     setEndDate(toInputDate(goalQuery.data.end_date));
     setSource(goalQuery.data.source ?? "");
@@ -135,6 +138,7 @@ export default function GoalFormPage() {
         title: title.trim(),
         description: description.trim() || null,
         scope,
+        goal_level: goalLevel || null,
         start_date: startDate || null,
         end_date: endDate || null,
         source: source.trim() || null,
@@ -227,6 +231,17 @@ export default function GoalFormPage() {
               These details help validate the goal. Validation offers guidance only; it never rewrites your goal.
             </p>
           </div>
+          <label className="form-field">
+            <span>Goal level <small>(optional)</small></span>
+            <select value={goalLevel} onChange={(event) => setGoalLevel(event.target.value as GoalLevel | "")}>
+              <option value="">Not specified</option>
+              <option value="ANNUAL">Annual</option>
+              <option value="QUARTERLY">Quarterly</option>
+              <option value="MONTHLY">Monthly</option>
+              <option value="SPRINT">Sprint</option>
+            </select>
+            <small className="field-help">Level describes the planning horizon, not the goal scope or parent relationship.</small>
+          </label>
           <label className="form-field">
             <span>Goal type</span>
             <input value={goalType} onChange={(event) => setGoalType(event.target.value)} maxLength={100} placeholder="e.g. delivery, development, operational" />

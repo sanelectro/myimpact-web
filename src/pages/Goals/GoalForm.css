@@ -68,6 +68,7 @@
 }
 
 .form-field input,
+.form-field select,
 .form-field textarea {
   width: 100%;
   box-sizing: border-box;
@@ -81,7 +82,8 @@
   transition: border-color .15s ease, box-shadow .15s ease;
 }
 
-.form-field input {
+.form-field input,
+.form-field select {
   min-height: 44px;
   padding: 0 13px;
 }
@@ -93,6 +95,7 @@
 }
 
 .form-field input:focus,
+.form-field select:focus,
 .form-field textarea:focus {
   border-color: #84aaf7;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);

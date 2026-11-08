@@ -166,11 +166,14 @@ export type ImpactType =
   | "innovation"
   | "operational";
 
+export type GoalLevel = "ANNUAL" | "QUARTERLY" | "MONTHLY" | "SPRINT";
+
 export interface Goal {
   id: string;
   title: string;
   description: string | null;
   scope: GoalCategory;
+  goal_level?: GoalLevel | null;
   organization_id: string | null;
   organization_name: string | null;
   start_date: string | null;
@@ -290,6 +293,7 @@ export interface GoalCreateRequest {
   title: string;
   description: string | null;
   scope: GoalScope;
+  goal_level?: GoalLevel | null;
   start_date: string | null;
   end_date: string | null;
   source: string | null;

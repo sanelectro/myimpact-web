@@ -443,6 +443,7 @@ export default function GoalDetailPage() {
       <header className="goal-detail-hero">
         <div className="goal-detail-meta-label">
           GOAL DETAIL <span>·</span> {formatScope(goalData.scope).toUpperCase()}
+          {goalData.goal_level && <> <span>·</span> {goalData.goal_level} LEVEL</>}
         </div>
         <div className="goal-detail-hero-row">
           <div className="goal-detail-title-block">
