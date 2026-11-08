@@ -125,7 +125,7 @@ export default function GoalFormPage() {
         return existing ?? {
           criterion_type: "BINARY" as const,
           description,
-          completion_conditions: null,
+          completion_conditions: description,
           milestones: [],
           target_value: null,
           unit: null,
@@ -277,6 +277,7 @@ export default function GoalFormPage() {
           <label className="form-field form-field-full">
             <span>Success criteria <small>(one per line)</small></span>
             <textarea value={successCriteriaText} onChange={(event) => setSuccessCriteriaText(event.target.value)} rows={3} placeholder="How will you know the goal is complete?" />
+            <small className="field-help">For new criteria, each line is also used as its binary completion condition.</small>
           </label>
           <label className="form-field">
             <span>Deliverables <small>(one per line)</small></span>

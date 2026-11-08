@@ -36,7 +36,9 @@ The dashboard currently surfaces:
 The goal editor saves structured definition fields with the existing create/update
 requests. Goal detail lets the employee run validation and review the current and
 previous validation findings; validation does not rewrite goal content. Lifecycle
-approval/status is shown separately.
+approval/status is shown separately. Each newly entered success-criterion line is
+also its binary completion condition; unchanged existing criteria retain their
+full definitions.
 
 The goal editor supports baseline and target deferrals with a reason and a due
 date or resolution stage. Resolving a deferral requires a value and a
@@ -174,6 +176,15 @@ validation and approval records, so evidence coverage does not exercise the
 live validation/approval workflow. The app APIs and browser requests themselves
 are not mocked. Stop the isolated services and remove only the test container
 and temporary keys afterwards.
+
+For the separate validation-to-evidence browser scenario, configure the
+isolated AI service with `LLM_PROVIDER=groq`, a dummy `GROQ_API_KEY`, and
+`GROQ_BASE_URL=http://127.0.0.1:<provider-port>/v1`. Set
+`MYIMPACT_E2E_VALIDATION_LLM_PORT` to that same unused port and run
+`npx playwright test e2e/goal-validation-real-stack.spec.ts --workers=1`.
+The test starts a temporary local provider fixture for semantic responses;
+it exercises the actual validation, approval, activation and evidence APIs,
+but does not evaluate a real model or contact an external provider.
 
 ### Workspace scrolling
 

@@ -103,6 +103,51 @@ describe("goal level form", () => {
     container.remove();
   });
 
+  it("uses each new success criterion as its completion condition", async () => {
+    vi.mocked(getProfile).mockResolvedValue({ organization_id: null } as Awaited<ReturnType<typeof getProfile>>);
+    vi.mocked(createGoal).mockResolvedValue({ id: "goal-1" } as Awaited<ReturnType<typeof createGoal>>);
+    const { container, root, client } = await renderForm("/goals/new");
+    const title = container.querySelector<HTMLInputElement>("input[placeholder^='e.g. Improve']")!;
+    const criteria = container.querySelector<HTMLTextAreaElement>("textarea[placeholder^='How will you know']")!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(title, "New goal");
+      title.dispatchEvent(new Event("input", { bubbles: true }));
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!.call(criteria, "Release is live\nReview is complete");
+      criteria.dispatchEvent(new Event("input", { bubbles: true }));
+      container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    });
+    await waitFor(() => expect(createGoal).toHaveBeenCalledOnce());
+    expect(vi.mocked(createGoal).mock.calls[0][0].structured_fields?.success_criteria).toEqual([
+      expect.objectContaining({ criterion_type: "BINARY", description: "Release is live", completion_conditions: "Release is live" }),
+      expect.objectContaining({ criterion_type: "BINARY", description: "Review is complete", completion_conditions: "Review is complete" }),
+    ]);
+    await act(async () => root.unmount());
+    client.clear();
+    container.remove();
+  });
+
+  it("preserves the full definition of an unchanged criterion", async () => {
+    const criterion = {
+      criterion_type: "BINARY" as const, description: "Release is live",
+      completion_conditions: "Release is available to every customer", milestones: [],
+      target_value: null, unit: null, evidence_suggestions: ["Release log"],
+      assumptions_and_clarifications: [],
+    };
+    vi.mocked(getProfile).mockResolvedValue({ organization_id: null } as Awaited<ReturnType<typeof getProfile>>);
+    vi.mocked(getGoal).mockResolvedValue({
+      ...goal, structured_fields: { success_criteria: [criterion] },
+    } as Awaited<ReturnType<typeof getGoal>>);
+    vi.mocked(updateGoal).mockResolvedValue({ id: "goal-1" } as Awaited<ReturnType<typeof updateGoal>>);
+    const { container, root, client } = await renderForm("/goals/goal-1/edit");
+    await waitFor(() => expect(container.querySelector<HTMLTextAreaElement>("textarea[placeholder^='How will you know']")?.value).toBe("Release is live"));
+    await act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+    await waitFor(() => expect(updateGoal).toHaveBeenCalledOnce());
+    expect(vi.mocked(updateGoal).mock.calls[0][1].structured_fields?.success_criteria).toEqual([criterion]);
+    await act(async () => root.unmount());
+    client.clear();
+    container.remove();
+  });
+
   it("omits unchanged deferrals so concurrent changes are preserved by the server", async () => {
     vi.mocked(getProfile).mockResolvedValue({ organization_id: null } as Awaited<ReturnType<typeof getProfile>>);
     vi.mocked(getGoal).mockResolvedValue({
