@@ -144,6 +144,37 @@ provider is not part of the browser test suite.
 See [Playwright E2E scenarios](./docs/playwright-scenarios.md) for current
 browser coverage and planned user journeys.
 
+#### Isolated hierarchy real-stack test
+
+`e2e/goal-hierarchy-real-stack.spec.ts` is opt-in and writes test accounts,
+goals, validation fixtures and evidence. **Never point it at a shared or
+persistent database.** Start a disposable PostgreSQL container with database
+`hierarchye2e`, user `e2e`, a label `myimpact.test=hierarchy-e2e-<unique-id>`,
+and a loopback-only published port; apply and validate all `myimpact-db`
+migrations. Start separate auth and AI services using only this database,
+temporary signing keys, and loopback URLs, then start Vite with those service
+URLs. Disable external providers and credentials. Do not reuse existing local
+services. Ensure the auth service permits the Vite origin and has
+`COOKIE_SECURE=false` for local HTTP.
+
+In PowerShell, with the three isolated services already running:
+
+```powershell
+$env:MYIMPACT_E2E_ISOLATED = "1"
+$env:MYIMPACT_E2E_DISPOSABLE_CONTAINER = "<container-name>"
+$env:MYIMPACT_E2E_AUTH_API_URL = "http://127.0.0.1:<auth-port>"
+$env:MYIMPACT_E2E_AI_API_URL = "http://127.0.0.1:<ai-port>"
+$env:PLAYWRIGHT_BASE_URL = "http://127.0.0.1:<web-port>"
+$env:MYIMPACT_E2E_REAL_STACK = "0"
+npx playwright test e2e/goal-hierarchy-real-stack.spec.ts --workers=1
+```
+
+The test checks the container label and loopback port before seeding READY
+validation and approval records, so evidence coverage does not exercise the
+live validation/approval workflow. The app APIs and browser requests themselves
+are not mocked. Stop the isolated services and remove only the test container
+and temporary keys afterwards.
+
 ### Workspace scrolling
 
 On desktop (above 680px), the sidebar stays in place while the right-hand content
