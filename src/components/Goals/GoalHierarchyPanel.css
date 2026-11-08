@@ -1,0 +1,14 @@
+.goal-hierarchy-panel h2 { margin: 7px 0 4px; font-size: 21px; }
+.goal-hierarchy-panel h3 { margin: 20px 0 8px; }
+.goal-hierarchy-panel p { color: #667085; }
+.goal-hierarchy-panel label { display: grid; gap: 6px; margin-top: 12px; color: #344054; font-weight: 700; }
+.goal-hierarchy-panel select, .goal-hierarchy-panel input {
+  box-sizing: border-box;
+  max-width: 500px;
+  padding: 10px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  font: inherit;
+}
+.goal-hierarchy-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.goal-hierarchy-panel details { margin-top: 20px; }

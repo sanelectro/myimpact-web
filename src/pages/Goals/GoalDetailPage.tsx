@@ -40,6 +40,7 @@ import type {
 import GoalMilestones from "../../components/Milestones/GoalMilestones";
 import GoalCriteriaAssessment from "../../components/Goals/GoalCriteriaAssessment";
 import GoalValidationPanel from "../../components/Goals/GoalValidationPanel";
+import GoalHierarchyPanel from "../../components/Goals/GoalHierarchyPanel";
 import EvidenceEligibilityGate from "../../components/Goals/EvidenceEligibilityGate";
 import "./GoalDetail.css";
 
@@ -690,6 +691,8 @@ export default function GoalDetailPage() {
           </ol>
         ) : null}
       </section>
+
+      <GoalHierarchyPanel key={goalData.id} goalId={goalData.id} />
 
       <GoalValidationPanel
         history={validationHistory.data ?? []}

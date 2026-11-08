@@ -6,6 +6,9 @@ import {
 } from "./client";
 import type {
   Goal,
+  GoalHierarchy,
+  GoalHierarchySummary,
+  GoalRelationshipEvent,
   GoalEvidenceEligibility,
   GoalStatusHistory,
   GoalValidationRun,
@@ -76,6 +79,42 @@ const API_BASE_URL =
 
 export function getGoals() {
   return apiRequest<Goal[]>(`/api/v1/goals${userQuery()}`);
+}
+
+export function getGoalHierarchy(goalId: string) {
+  return apiRequest<GoalHierarchy>(`/api/v1/goals/${encodeURIComponent(goalId)}/hierarchy${userQuery()}`);
+}
+
+export function getGoalChildren(goalId: string, offset: number, limit = 50) {
+  return apiRequest<GoalHierarchySummary[]>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/children${userQuery()}&limit=${limit}&offset=${offset}`,
+  );
+}
+
+export function getGoalRelationshipHistory(goalId: string, offset: number, limit = 50) {
+  return apiRequest<GoalRelationshipEvent[]>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/relationship-history${userQuery()}&limit=${limit}&offset=${offset}`,
+  );
+}
+
+export function changeGoalParent(
+  goalId: string,
+  parentGoalId: string | null,
+  expectedRevision: number,
+  reason: string | null,
+) {
+  return apiRequest<{ id: string; parent_goal_id: string | null; relationship_revision: number }>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/parent${userQuery()}`,
+    {
+      method: parentGoalId === null ? "DELETE" : "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...(parentGoalId === null ? {} : { parent_goal_id: parentGoalId }),
+        expected_revision: expectedRevision,
+        reason,
+      }),
+    },
+  );
 }
 
 export function getUserGoals(userId: string) {

@@ -38,6 +38,12 @@ requests. Goal detail lets the employee run validation and review the current an
 previous validation findings; validation does not rewrite goal content. Lifecycle
 approval/status is shown separately.
 
+Goal detail also shows ancestors, direct children, and paginated relationship
+history. Owners can connect, reparent, or disconnect a goal; a stale revision
+or invalid relationship is reported without modifying the goal definition.
+The hierarchy API and its database migrations must be deployed before using
+these controls.
+
 Evidence submission is shown only when the server confirms the goal is eligible.
 The UI reads `GET /api/v1/goals/{goal_id}/evidence-eligibility` and uses the
 backend's eligibility result, including legacy compatibility, rather than

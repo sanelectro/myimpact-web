@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { apiRequest } from "../src/api/client";
-import { updateAdminCompany } from "../src/api/myImpact";
+import { changeGoalParent, getGoalChildren, getGoalRelationshipHistory, updateAdminCompany } from "../src/api/myImpact";
 
 vi.mock("../src/auth/auth", () => ({
   getAccessToken: () => "test-access-token",
@@ -55,6 +55,17 @@ describe("company updates", () => {
     );
     vi.unstubAllGlobals();
   });
+
+  it("sends a revision and reason when disconnecting a goal parent", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{"id":"child","parent_goal_id":null,"relationship_revision":4}', { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await changeGoalParent("child/1", null, 3, "Changed priorities");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:8000/api/v1/goals/child%2F1/parent?user_id=user-test",
+      expect.objectContaining({ method: "DELETE", body: JSON.stringify({ expected_revision: 3, reason: "Changed priorities" }) }),
+    );
+    vi.unstubAllGlobals();
+  });
 });
 
 describe("apiRequest empty responses", () => {
@@ -63,6 +74,27 @@ describe("apiRequest empty responses", () => {
 
     await expect(apiRequest<void>("/api/v1/goals/goal-1", { method: "DELETE" })).resolves.toBeUndefined();
 
+    vi.unstubAllGlobals();
+  });
+
+  it("sends the parent and revision when connecting a goal", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{"id":"child","parent_goal_id":"parent","relationship_revision":1}', { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await changeGoalParent("child", "parent", 0, null);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:8000/api/v1/goals/child/parent?user_id=user-test",
+      expect.objectContaining({ method: "PUT", body: JSON.stringify({ parent_goal_id: "parent", expected_revision: 0, reason: null }) }),
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it("requests the selected child and relationship history pages", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response("[]", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await getGoalChildren("child", 50);
+    await getGoalRelationshipHistory("child", 100, 25);
+    expect(fetchMock.mock.calls[0][0]).toBe("http://127.0.0.1:8000/api/v1/goals/child/children?user_id=user-test&limit=50&offset=50");
+    expect(fetchMock.mock.calls[1][0]).toBe("http://127.0.0.1:8000/api/v1/goals/child/relationship-history?user_id=user-test&limit=25&offset=100");
     vi.unstubAllGlobals();
   });
 

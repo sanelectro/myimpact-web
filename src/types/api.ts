@@ -168,6 +168,32 @@ export type ImpactType =
 
 export type GoalLevel = "ANNUAL" | "QUARTERLY" | "MONTHLY" | "SPRINT";
 
+export interface GoalHierarchySummary {
+  id: string;
+  title: string;
+  goal_level: GoalLevel | null;
+  status: GoalStatus;
+  parent_goal_id: string | null;
+  relationship_revision: number;
+}
+
+export interface GoalHierarchy {
+  goal: GoalHierarchySummary;
+  ancestors: GoalHierarchySummary[];
+  next_ancestor_id: string | null;
+}
+
+export interface GoalRelationshipEvent {
+  id: string;
+  goal_id: string;
+  old_parent_goal_id: string | null;
+  new_parent_goal_id: string | null;
+  actor_user_id: string;
+  reason: string | null;
+  relationship_revision: number;
+  created_at: string;
+}
+
 export interface Goal {
   id: string;
   title: string;
