@@ -180,8 +180,64 @@ export interface Goal {
   deactivation_reason: string | null;
   source: string | null;
   source_document_id: string | null;
+  structured_fields: GoalStructuredFields | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface GoalStructuredFields {
+  goal_type: string | null;
+  accountability: string | null;
+  success_criteria: GoalCriterionDefinition[];
+  deliverables: string[];
+  outcome: string | null;
+  impact: string | null;
+  measurement: string | null;
+  baseline: string | null;
+  target: string | null;
+  dependencies: string[];
+  role_alignment: string | null;
+}
+
+export type GoalValidationStatus = "READY" | "NEEDS_REFINEMENT" | "NEEDS_DISCUSSION" | "INVALID";
+export type GoalValidationSeverity = "INFO" | "WARNING" | "ERROR";
+
+export interface GoalValidationFinding {
+  dimension: string;
+  finding_code: string;
+  severity: GoalValidationSeverity;
+  validation_status: GoalValidationStatus;
+  explanation: string;
+  missing_info: string[];
+  clarification_questions: string[];
+  suggested_improvement: string | null;
+  human_intervention_required: boolean;
+}
+
+export interface GoalValidationRun {
+  id: string;
+  goal_id: string;
+  goal_version_id: string;
+  goal_version: number;
+  status: GoalValidationStatus;
+  findings: GoalValidationFinding[];
+  rule_set_version: string;
+  prompt_version: string;
+  model_provider: string | null;
+  model_version: string | null;
+  actor_user_id: string | null;
+  created_at: string;
+}
+
+export interface GoalEvidenceEligibility {
+  eligible: boolean;
+  reason: string;
+  goal_status: GoalStatus;
+  latest_version: number | null;
+  latest_version_origin: string | null;
+  legacy_compatibility: boolean;
+  ready_validation_exists: boolean;
+  approved_for_latest_version: boolean;
 }
 
 export interface GoalStatusHistory {
@@ -237,6 +293,7 @@ export interface GoalCreateRequest {
   start_date: string | null;
   end_date: string | null;
   source: string | null;
+  structured_fields: GoalStructuredFields;
 }
 
 export type GoalUpdateRequest = Partial<GoalCreateRequest>;

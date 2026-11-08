@@ -31,6 +31,20 @@ The dashboard currently surfaces:
 - Preparation / next action
 - Active goal summary
 
+## Goal validation and evidence eligibility
+
+The goal editor saves structured definition fields with the existing create/update
+requests. Goal detail lets the employee run validation and review the current and
+previous validation findings; validation does not rewrite goal content. Lifecycle
+approval/status is shown separately.
+
+Evidence submission is shown only when the server confirms the goal is eligible.
+The UI reads `GET /api/v1/goals/{goal_id}/evidence-eligibility` and uses the
+backend's eligibility result, including legacy compatibility, rather than
+reconstructing the rules in the browser. Validation uses
+`POST /api/v1/goals/{goal_id}/validate` and
+`GET /api/v1/goals/{goal_id}/validation-history`.
+
 ### Local setup
 
 ```bash

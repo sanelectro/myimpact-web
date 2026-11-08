@@ -3,7 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   getGoal,
+  getGoalEvidenceEligibility,
   getGoalStatusHistory,
+  getGoalValidationHistory,
   getGoalEvidence,
   getGoalMilestones,
   getDocumentExpectations,
@@ -24,6 +26,7 @@ import {
   disconnectSource,
   getSourceAuthorizationUrl,
   getSourceConnections,
+  validateGoal,
 } from "../../api/myImpact";
 import type {
   DocumentExpectation,
@@ -36,6 +39,8 @@ import type {
 } from "../../types/api";
 import GoalMilestones from "../../components/Milestones/GoalMilestones";
 import GoalCriteriaAssessment from "../../components/Goals/GoalCriteriaAssessment";
+import GoalValidationPanel from "../../components/Goals/GoalValidationPanel";
+import EvidenceEligibilityGate from "../../components/Goals/EvidenceEligibilityGate";
 import "./GoalDetail.css";
 
 function formatDate(value: string | null | undefined) {
@@ -126,6 +131,27 @@ export default function GoalDetailPage() {
     queryFn: () => getGoalStatusHistory(goalId!),
     enabled: Boolean(goalId),
   });
+  const validationHistory = useQuery({
+    queryKey: ["goal-validation-history", goalId],
+    queryFn: () => getGoalValidationHistory(goalId!),
+    enabled: Boolean(goalId),
+  });
+  const evidenceEligibility = useQuery({
+    queryKey: ["goal-evidence-eligibility", goalId],
+    queryFn: () => getGoalEvidenceEligibility(goalId!),
+    enabled: Boolean(goalId),
+  });
+
+  const validationMutation = useMutation({
+    mutationFn: () => validateGoal(goalId!),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["goal-validation-history", goalId] }),
+        queryClient.invalidateQueries({ queryKey: ["goal-evidence-eligibility", goalId] }),
+        queryClient.invalidateQueries({ queryKey: ["goal", goalId] }),
+      ]);
+    },
+  });
 
   const transitionMutation = useMutation({
     mutationFn: async (transition: GoalTransition) => {
@@ -143,6 +169,7 @@ export default function GoalDetailPage() {
       await queryClient.invalidateQueries({ queryKey: ["goal", goalId] });
       await queryClient.invalidateQueries({ queryKey: ["goals"] });
       await queryClient.invalidateQueries({ queryKey: ["goal-status-history", goalId] });
+      await queryClient.invalidateQueries({ queryKey: ["goal-evidence-eligibility", goalId] });
       queryClient.setQueryData(["goal", goalId], updated);
     },
   });
@@ -157,6 +184,7 @@ export default function GoalDetailPage() {
         queryClient.invalidateQueries({ queryKey: ["goals"] }),
         queryClient.invalidateQueries({ queryKey: ["archives"] }),
         queryClient.invalidateQueries({ queryKey: ["goal-status-history", goalId] }),
+        queryClient.invalidateQueries({ queryKey: ["goal-evidence-eligibility", goalId] }),
       ]);
       queryClient.setQueryData(["goal", goalId], updated);
     },
@@ -425,6 +453,17 @@ export default function GoalDetailPage() {
             <span className={`goal-detail-lifecycle goal-detail-lifecycle-${goalData.status}`}>
               {formatGoalStatus(goalData.status)}
             </span>
+            {evidenceEligibility.isError ? (
+              <span className="goal-detail-approval-status" role="status">
+                Latest version approval unavailable
+              </span>
+            ) : evidenceEligibility.data?.latest_version != null && (
+              <span className="goal-detail-approval-status">
+                Version {evidenceEligibility.data.latest_version} approval:{" "}
+                {evidenceEligibility.data.approved_for_latest_version ? "Approved" : "Not approved"}
+                {evidenceEligibility.data.legacy_compatibility ? " · legacy compatibility" : ""}
+              </span>
+            )}
             {goalData.sub_status !== goalData.status && goalData.sub_status !== "none" && (
               <span className="goal-detail-lifecycle goal-detail-substatus">
                 {formatSubStatus(goalData.sub_status)}
@@ -651,6 +690,16 @@ export default function GoalDetailPage() {
         ) : null}
       </section>
 
+      <GoalValidationPanel
+        history={validationHistory.data ?? []}
+        isLoading={validationHistory.isLoading}
+        error={validationHistory.isError ? validationHistory.error.message : null}
+        isValidating={validationMutation.isPending}
+        validationError={validationMutation.isError ? validationMutation.error.message : null}
+        currentGoalVersion={evidenceEligibility.data?.latest_version}
+        onValidate={() => validationMutation.mutate()}
+      />
+
       <GoalCriteriaAssessment goalId={goalData.id} />
 
       <GoalMilestones goalId={goalData.id} />
@@ -724,7 +773,11 @@ export default function GoalDetailPage() {
             <h2>{evidenceItems.length} pieces of evidence</h2>
             <p>What you have done and the proof connected to this goal.</p>
           </div>
-          {goalData.status === "active" ? (
+          <EvidenceEligibilityGate
+            eligibility={evidenceEligibility.data}
+            isLoading={evidenceEligibility.isLoading}
+            isError={evidenceEligibility.isError}
+          >
             <button
               className="goal-edit-button"
               type="button"
@@ -742,18 +795,10 @@ export default function GoalDetailPage() {
             >
               {showEvidenceForm ? "Cancel" : "Add evidence"}
             </button>
-          ) : (
-            <p className="goal-evidence-inactive-notice" role="status">
-              {goalData.status === "draft"
-                ? "Approve and activate this goal before adding evidence."
-                : goalData.status === "approved"
-                  ? "Activate this goal before adding evidence."
-                  : `This goal is ${goalData.status}. Only active goals can accept new evidence.`}
-            </p>
-          )}
+          </EvidenceEligibilityGate>
         </div>
 
-        {showEvidenceForm && goalData.status === "active" && (
+        {showEvidenceForm && evidenceEligibility.data?.eligible && (
           <form
             className="goal-evidence-form"
             onSubmit={(event) => {

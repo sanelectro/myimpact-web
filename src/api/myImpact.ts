@@ -6,7 +6,9 @@ import {
 } from "./client";
 import type {
   Goal,
+  GoalEvidenceEligibility,
   GoalStatusHistory,
+  GoalValidationRun,
   GoalEvidence,
   GoalInsight,
   ImpactAssessment,
@@ -558,6 +560,25 @@ export function getGoal(goalId: string) {
 export function getGoalStatusHistory(goalId: string) {
   return apiRequest<GoalStatusHistory[]>(
     `/api/v1/goals/${encodeURIComponent(goalId)}/history${userQuery()}`,
+  );
+}
+
+export function getGoalValidationHistory(goalId: string) {
+  return apiRequest<GoalValidationRun[]>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/validation-history${userQuery()}`,
+  );
+}
+
+export function validateGoal(goalId: string) {
+  return apiRequest<GoalValidationRun>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/validate${userQuery()}`,
+    { method: "POST" },
+  );
+}
+
+export function getGoalEvidenceEligibility(goalId: string) {
+  return apiRequest<GoalEvidenceEligibility>(
+    `/api/v1/goals/${encodeURIComponent(goalId)}/evidence-eligibility${userQuery()}`,
   );
 }
 

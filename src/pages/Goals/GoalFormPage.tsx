@@ -8,7 +8,11 @@ import {
   getProfile,
   updateGoal,
 } from "../../api/myImpact";
-import type { GoalScope } from "../../types/api";
+import type {
+  GoalCriterionDefinition,
+  GoalScope,
+  GoalStructuredFields,
+} from "../../types/api";
 import "./GoalForm.css";
 
 const scopeOptions: { value: GoalScope; label: string; description: string }[] = [
@@ -19,6 +23,14 @@ const scopeOptions: { value: GoalScope; label: string; description: string }[] =
 
 function toInputDate(value: string | null | undefined) {
   return value ? value.slice(0, 10) : "";
+}
+
+function listToText(values: string[] | undefined) {
+  return (values ?? []).join("\n");
+}
+
+function textToList(value: string) {
+  return value.split("\n").map((item) => item.trim()).filter(Boolean);
 }
 
 export default function GoalFormPage() {
@@ -42,6 +54,18 @@ export default function GoalFormPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [source, setSource] = useState("");
+  const [goalType, setGoalType] = useState("");
+  const [accountability, setAccountability] = useState("");
+  const [successCriteriaText, setSuccessCriteriaText] = useState("");
+  const [existingSuccessCriteria, setExistingSuccessCriteria] = useState<GoalCriterionDefinition[]>([]);
+  const [deliverablesText, setDeliverablesText] = useState("");
+  const [outcome, setOutcome] = useState("");
+  const [impact, setImpact] = useState("");
+  const [measurement, setMeasurement] = useState("");
+  const [baseline, setBaseline] = useState("");
+  const [target, setTarget] = useState("");
+  const [dependenciesText, setDependenciesText] = useState("");
+  const [roleAlignment, setRoleAlignment] = useState("");
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
@@ -52,6 +76,21 @@ export default function GoalFormPage() {
     setStartDate(toInputDate(goalQuery.data.start_date));
     setEndDate(toInputDate(goalQuery.data.end_date));
     setSource(goalQuery.data.source ?? "");
+    const fields = goalQuery.data.structured_fields;
+    setGoalType(fields?.goal_type ?? "");
+    setAccountability(fields?.accountability ?? "");
+    setExistingSuccessCriteria(fields?.success_criteria ?? []);
+    setSuccessCriteriaText(
+      (fields?.success_criteria ?? []).map((criterion) => criterion.description).join("\n"),
+    );
+    setDeliverablesText(listToText(fields?.deliverables));
+    setOutcome(fields?.outcome ?? "");
+    setImpact(fields?.impact ?? "");
+    setMeasurement(fields?.measurement ?? "");
+    setBaseline(fields?.baseline ?? "");
+    setTarget(fields?.target ?? "");
+    setDependenciesText(listToText(fields?.dependencies));
+    setRoleAlignment(fields?.role_alignment ?? "");
   }, [goalQuery.data]);
 
   const mutation = useMutation({
@@ -64,6 +103,34 @@ export default function GoalFormPage() {
         throw new Error("Add your company in My Profile before creating an organization-specific goal.");
       }
 
+      const successCriteria = textToList(successCriteriaText).map((description) => {
+        const existing = existingSuccessCriteria.find(
+          (criterion) => criterion.description.trim() === description,
+        );
+        return existing ?? {
+          criterion_type: "BINARY" as const,
+          description,
+          completion_conditions: null,
+          milestones: [],
+          target_value: null,
+          unit: null,
+          evidence_suggestions: [],
+          assumptions_and_clarifications: [],
+        };
+      });
+      const structured_fields: GoalStructuredFields = {
+        goal_type: goalType.trim() || null,
+        accountability: accountability.trim() || null,
+        success_criteria: successCriteria,
+        deliverables: textToList(deliverablesText),
+        outcome: outcome.trim() || null,
+        impact: impact.trim() || null,
+        measurement: measurement.trim() || null,
+        baseline: baseline.trim() || null,
+        target: target.trim() || null,
+        dependencies: textToList(dependenciesText),
+        role_alignment: roleAlignment.trim() || null,
+      };
       const payload = {
         title: title.trim(),
         description: description.trim() || null,
@@ -71,6 +138,7 @@ export default function GoalFormPage() {
         start_date: startDate || null,
         end_date: endDate || null,
         source: source.trim() || null,
+        structured_fields,
       };
 
       return isEdit
@@ -80,6 +148,7 @@ export default function GoalFormPage() {
     onSuccess: async (goal) => {
       await queryClient.invalidateQueries({ queryKey: ["goals"] });
       await queryClient.invalidateQueries({ queryKey: ["goal", goal.id] });
+      await queryClient.invalidateQueries({ queryKey: ["goal-evidence-eligibility", goal.id] });
       navigate(`/goals/${goal.id}`);
     },
     onError: (error) => {
@@ -148,6 +217,59 @@ export default function GoalFormPage() {
               rows={5}
               maxLength={5000}
             />
+          </label>
+        </div>
+
+        <div className="form-section form-grid">
+          <div className="form-field form-field-full">
+            <div className="eyebrow">STRUCTURED GOAL DETAILS</div>
+            <p className="field-help">
+              These details help validate the goal. Validation offers guidance only; it never rewrites your goal.
+            </p>
+          </div>
+          <label className="form-field">
+            <span>Goal type</span>
+            <input value={goalType} onChange={(event) => setGoalType(event.target.value)} maxLength={100} placeholder="e.g. delivery, development, operational" />
+          </label>
+          <label className="form-field">
+            <span>Accountability</span>
+            <input value={accountability} onChange={(event) => setAccountability(event.target.value)} maxLength={1000} placeholder="What are you personally accountable for?" />
+          </label>
+          <label className="form-field form-field-full">
+            <span>Success criteria <small>(one per line)</small></span>
+            <textarea value={successCriteriaText} onChange={(event) => setSuccessCriteriaText(event.target.value)} rows={3} placeholder="How will you know the goal is complete?" />
+          </label>
+          <label className="form-field">
+            <span>Deliverables <small>(one per line)</small></span>
+            <textarea value={deliverablesText} onChange={(event) => setDeliverablesText(event.target.value)} rows={3} placeholder="Concrete outputs or milestones" />
+          </label>
+          <label className="form-field">
+            <span>Expected outcome</span>
+            <textarea value={outcome} onChange={(event) => setOutcome(event.target.value)} rows={3} maxLength={4000} placeholder="What should change as a result?" />
+          </label>
+          <label className="form-field">
+            <span>Expected impact</span>
+            <textarea value={impact} onChange={(event) => setImpact(event.target.value)} rows={3} maxLength={4000} placeholder="Who or what benefits, and how?" />
+          </label>
+          <label className="form-field">
+            <span>Measurement</span>
+            <input value={measurement} onChange={(event) => setMeasurement(event.target.value)} maxLength={1000} placeholder="How will progress or success be measured?" />
+          </label>
+          <label className="form-field">
+            <span>Baseline</span>
+            <input value={baseline} onChange={(event) => setBaseline(event.target.value)} maxLength={1000} placeholder="Current measure or starting point" />
+          </label>
+          <label className="form-field">
+            <span>Target</span>
+            <input value={target} onChange={(event) => setTarget(event.target.value)} maxLength={1000} placeholder="Desired measure or end state" />
+          </label>
+          <label className="form-field">
+            <span>Dependencies <small>(one per line)</small></span>
+            <textarea value={dependenciesText} onChange={(event) => setDependenciesText(event.target.value)} rows={3} placeholder="People, decisions, or resources this depends on" />
+          </label>
+          <label className="form-field form-field-full">
+            <span>Role alignment</span>
+            <textarea value={roleAlignment} onChange={(event) => setRoleAlignment(event.target.value)} rows={3} maxLength={2000} placeholder="How this goal aligns with your role or responsibilities" />
           </label>
         </div>
 
